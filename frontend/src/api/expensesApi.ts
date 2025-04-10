@@ -7,7 +7,8 @@ import {
   PaginationQueryDto, 
   UpdateExpenseDto,
   DailyExpenseData,
-  CategoryTotal
+  CategoryTotal,
+  GenerateReportParams
 } from '../types';
 import { format, subDays } from 'date-fns';
 
@@ -186,12 +187,12 @@ export const expensesApi = baseApi.injectEndpoints({
       query: () => {
         console.log('Making getRecentExpenses API request');
         return {
-          url: `/expenses?limit=5&page=1`,
+          url: `/expenses/recent`,
           method: 'GET',
         };
       },
       transformResponse: (response: any) => {
-        console.log('Raw recent expenses response:', response);
+        console.log('Raw recent expenses response:', JSON.stringify(response, null, 2));
         
         // If response is empty or null, return empty array
         if (!response) {
@@ -199,21 +200,36 @@ export const expensesApi = baseApi.injectEndpoints({
           return [];
         }
         
-        // If response has data property (paginated response)
-        if (response.data && Array.isArray(response.data)) {
-          console.log('Recent expenses response has data array with length:', response.data.length);
-          return response.data;
-        }
-        
         // If response is already an array
         if (Array.isArray(response)) {
           console.log('Recent expenses response is an array with length:', response.length);
+          console.log('First expense in array:', response.length > 0 ? JSON.stringify(response[0], null, 2) : 'No expenses');
           return response;
+        }
+        
+        // If response has data property (paginated response)
+        if (response.data && Array.isArray(response.data)) {
+          console.log('Recent expenses response has data array with length:', response.data.length);
+          console.log('First expense in data array:', response.data.length > 0 ? JSON.stringify(response.data[0], null, 2) : 'No expenses');
+          return response.data;
         }
         
         // If response is a single object, wrap it in an array
         if (typeof response === 'object') {
-          console.log('Recent expenses response is a single object');
+          console.log('Recent expenses response is a single object:', JSON.stringify(response, null, 2));
+          
+          // Check if it's a paginated response with a different structure
+          if (response.items && Array.isArray(response.items)) {
+            console.log('Found items array with length:', response.items.length);
+            return response.items;
+          }
+          
+          // Check if it has a results property
+          if (response.results && Array.isArray(response.results)) {
+            console.log('Found results array with length:', response.results.length);
+            return response.results;
+          }
+          
           return [response];
         }
         
@@ -222,6 +238,15 @@ export const expensesApi = baseApi.injectEndpoints({
         return [];
       },
       providesTags: [{ type: 'Expenses', id: 'LIST' }],
+    }),
+    generateReport: builder.mutation<{ success: boolean; message: string }, GenerateReportParams>(
+      {
+      query: (params) => ({
+        url: '/reports/generate',
+        method: 'POST',
+        body: params
+      }),
+   
     }),
   }),
 });
@@ -235,4 +260,5 @@ export const {
   useGetDailyExpensesQuery,
   useGetCategoryTotalsQuery,
   useGetRecentExpensesQuery,
+  useGenerateReportMutation
 } = expensesApi;

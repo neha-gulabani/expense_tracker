@@ -124,3 +124,10 @@ export interface CategoryTotal {
   category: string;
   amount: number;
 }
+
+// Report types
+export interface GenerateReportParams {
+  startDate?: string;
+  endDate?: string;
+  format?: string;
+}

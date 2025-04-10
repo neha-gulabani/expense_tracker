@@ -1,53 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
-  TextField,
-  Typography,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Stack,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  Chip,
-  CircularProgress,
-} from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import { useFormik } from 'formik';
 import { format } from 'date-fns';
-import {
-  useGetExpensesQuery,
-  useCreateExpenseMutation,
-  useUpdateExpenseMutation,
+import { useFormik } from 'formik';
+import { 
+  useGetExpensesQuery, 
+  useCreateExpenseMutation, 
+  useUpdateExpenseMutation, 
   useDeleteExpenseMutation,
 } from '../api/expensesApi';
 import { useGetCategoriesQuery } from '../api/categoriesApi';
-import { FilterExpenseDto } from '../types';
+import { FilterExpenseDto, Expense } from '../types';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead,
+  TableRow 
+} from '../components/ui/table';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '../components/ui/select';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogFooter, 
+  DialogTitle 
+} from '../components/ui/dialog';
+import { Spinner } from '../components/ui/spinner';
+import { Calendar } from '../components/ui/calendar';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '../components/ui/popover';
+import { Badge } from '../components/ui/badge';
+import { cn } from '../lib/utils';
 
 const ExpensesPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [limit, setLimit] = useState(10);
   const [filters, setFilters] = useState<FilterExpenseDto>({});
   const [openDialog, setOpenDialog] = useState(false);
-  const [currentExpense, setCurrentExpense] = useState<any>(null);
+  const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
   // Updated to match the new API signature
@@ -62,11 +63,17 @@ const ExpensesPage: React.FC = () => {
   const [updateExpense, { isLoading: isUpdating }] = useUpdateExpenseMutation();
   const [deleteExpense] = useDeleteExpenseMutation();
 
-  // Refetch expenses on component mount
+  // Monitor for data changes and refresh when needed
   useEffect(() => {
-    refetchExpenses();
     console.log('Expenses page - expensesData:', expensesData);
-  }, [refetchExpenses]);
+  }, [refetchExpenses, expensesData]);
+
+  // Function to format date for display
+  const formatDate = (date: Date | string): string => {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return format(dateObj, 'MMM dd, yyyy');
+  };
 
   // Filter form
   const filterFormik = useFormik({
@@ -100,7 +107,7 @@ const ExpensesPage: React.FC = () => {
       date: new Date(),
       categoryName: '',
     },
-    onSubmit: async (values) => {
+    onSubmit: async (values: any) => {
       const expenseData = {
         ...values,
         amount: Number(values.amount),
@@ -136,7 +143,7 @@ const ExpensesPage: React.FC = () => {
     // Since we can't pass pagination to the API anymore, just update the local state
   };
 
-  const handleOpenDialog = (expense: any = null) => {
+  const handleOpenDialog = (expense: Expense | null = null) => {
     if (expense) {
       setCurrentExpense(expense);
       formik.setValues({
@@ -157,10 +164,10 @@ const ExpensesPage: React.FC = () => {
     formik.resetForm();
   };
 
-  const handleDeleteExpense = async (id: string) => {
+  const handleDeleteExpense = async (expenseId: string) => {
     if (window.confirm('Are you sure you want to delete this expense?')) {
       try {
-        await deleteExpense(id).unwrap();
+        await deleteExpense(expenseId).unwrap();
         // Manually refetch to ensure the table is updated
         refetchExpenses();
       } catch (error) {
@@ -173,6 +180,20 @@ const ExpensesPage: React.FC = () => {
     filterFormik.resetForm();
     setFilters({});
     refetchExpenses();
+  };
+
+  // Function to handle date selection in the filter
+  const handleDateSelect = (date: Date | null | undefined, type: 'startDate' | 'endDate'): void => {
+    if (date) {
+      filterFormik.setFieldValue(type, format(date, 'yyyy-MM-dd'));
+    }
+  };
+
+  // Function to handle date selection in the form
+  const handleExpenseDateSelect = (date: Date | null | undefined): void => {
+    if (date) {
+      formik.setFieldValue('date', format(date, 'yyyy-MM-dd'));
+    }
   };
 
   // Apply client-side filtering and pagination since we can't do it on the server
@@ -190,265 +211,348 @@ const ExpensesPage: React.FC = () => {
   const totalItems = filteredData.length;
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Expenses
-      </Typography>
+    <Card>
+      <CardHeader>
+        <CardTitle>Expenses</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Filter Section */}
+        <div className={cn("mb-4")}>
+          <div className={cn("flex justify-between items-center mb-2")}>
+            <h3 className={cn("text-lg font-medium")}>Manage Expenses</h3>
+            <div className={cn("flex gap-2")}>
+              <Button onClick={() => setShowFilters(!showFilters)} variant="outline">
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </Button>
+              <Button onClick={() => handleOpenDialog()}>Add Expense</Button>
+            </div>
+          </div>
 
-      {/* Filter Section */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">Expenses</Typography>
-          <Button
-            startIcon={<FilterListIcon />}
-            onClick={() => setShowFilters(!showFilters)}
-            color="primary"
-            variant="outlined"
-            size="small"
-          >
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
-          </Button>
-        </Box>
+          {showFilters && (
+            <div className={cn("p-4 border rounded-md bg-background mb-4")}>
+            <form onSubmit={filterFormik.handleSubmit} className={cn("grid grid-cols-1 md:grid-cols-3 gap-4")}>
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="startDate">Start Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal")}
+                    >
+                      {filterFormik.values.startDate 
+                        ? formatDate(filterFormik.values.startDate)
+                        : <span>Pick a date</span>
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className={cn("w-auto p-0")}>
+                    <Calendar
+                      selected={filterFormik.values.startDate ? new Date(filterFormik.values.startDate) : undefined}
+                      onSelect={(date: Date | undefined) => handleDateSelect(date, 'startDate')}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-        {showFilters && (
-          <Box component="form" onSubmit={filterFormik.handleSubmit} sx={{ mt: 2 }}>
-            <Stack spacing={2}>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <TextField
-                  fullWidth
-                  id="startDate"
-                  name="startDate"
-                  label="Start Date"
-                  type="date"
-                  value={filterFormik.values.startDate}
-                  onChange={filterFormik.handleChange}
-                  InputLabelProps={{ shrink: true }}
-                />
-                <TextField
-                  fullWidth
-                  id="endDate"
-                  name="endDate"
-                  label="End Date"
-                  type="date"
-                  value={filterFormik.values.endDate}
-                  onChange={filterFormik.handleChange}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Stack>
-              
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <FormControl fullWidth>
-                  <InputLabel id="category-label">Category</InputLabel>
-                  <Select
-                    labelId="category-label"
-                    id="category"
-                    name="category"
-                    value={filterFormik.values.category}
-                    onChange={filterFormik.handleChange}
-                    label="Category"
-                  >
-                    <MenuItem value="">All Categories</MenuItem>
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="endDate">End Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal")}
+                    >
+                      {filterFormik.values.endDate 
+                        ? formatDate(filterFormik.values.endDate)
+                        : <span>Pick a date</span>
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className={cn("w-auto p-0")}>
+                    <Calendar
+                      selected={filterFormik.values.endDate ? new Date(filterFormik.values.endDate) : undefined}
+                      onSelect={(date: Date | undefined) => handleDateSelect(date, 'endDate')}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="category">Category</Label>
+                <Select
+                  value={filterFormik.values.category}
+                  onValueChange={(value) => filterFormik.setFieldValue('category', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Categories</SelectItem>
                     {categories?.map((category) => (
-                      <MenuItem key={category._id} value={category._id}>
+                      <SelectItem key={category._id} value={category._id!}>
                         {category.name}
-                      </MenuItem>
+                      </SelectItem>
                     ))}
-                  </Select>
-                </FormControl>
-                <TextField
-                  fullWidth
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="minAmount">Min Amount</Label>
+                <Input
                   id="minAmount"
                   name="minAmount"
-                  label="Min Amount"
                   type="number"
                   value={filterFormik.values.minAmount}
                   onChange={filterFormik.handleChange}
                 />
-                <TextField
-                  fullWidth
+              </div>
+
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="maxAmount">Max Amount</Label>
+                <Input
                   id="maxAmount"
                   name="maxAmount"
-                  label="Max Amount"
                   type="number"
                   value={filterFormik.values.maxAmount}
                   onChange={filterFormik.handleChange}
                 />
-              </Stack>
-              
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Stack direction="row" spacing={1}>
-                  <Button type="submit" variant="contained" color="primary">
-                    Apply
-                  </Button>
-                  <Button variant="outlined" onClick={handleResetFilters}>
-                    Reset
-                  </Button>
-                </Stack>
-              </Box>
-            </Stack>
-          </Box>
-        )}
-      </Paper>
+              </div>
 
-      {/* Expenses Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell align="right">Amount</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoadingExpenses ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : paginatedData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  No expenses found
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedData.map((expense) => (
-                <TableRow key={expense._id}>
-                  <TableCell>{format(new Date(expense.date), 'MMM dd, yyyy')}</TableCell>
-                  <TableCell>{expense.description}</TableCell>
-                  <TableCell>
-                    {expense.category ? (
-                      <Chip
-                        label={expense.category.name}
-                        size="small"
-                        sx={{
-                          backgroundColor: expense.category.color || '#e0e0e0',
-                          color: '#fff',
-                        }}
-                      />
+              <div className={cn("flex items-end gap-2")}>
+                <Button type="submit">Apply Filters</Button>
+                <Button type="button" variant="outline" onClick={handleResetFilters}>
+                  Reset
+                </Button>
+              </div>
+            </form>
+          </div>
+          )}
+        </div>
+
+        {/* Expenses Table */}
+        {isLoadingExpenses ? (
+          <div className={cn("flex justify-center items-center py-8")}>
+            <Spinner />
+          </div>
+        ) : (
+          <>
+            <div className={cn("border rounded-md")}>
+              <div className="w-full overflow-auto">
+                <Table>
+                  <TableHead>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Date</TableHead>
+                      <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Description</TableHead>
+                      <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Category</TableHead>
+                      <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Amount</TableHead>
+                      <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Actions</TableHead>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedData.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className={cn("text-center")}>
+                          No expenses found
+                        </TableCell>
+                      </TableRow>
                     ) : (
-                      'Uncategorized'
+                      paginatedData.map((expense) => (
+                        <TableRow key={expense._id}>
+                          <TableCell className="px-3 py-4">{formatDate(expense.date)}</TableCell>
+                          <TableCell className="px-3 py-4">{expense.description}</TableCell>
+                          <TableCell className="px-3 py-4">
+                            {expense.category ? (
+                              <Badge 
+                                style={{ backgroundColor: expense.category.color || '#e0e0e0' }}
+                                className={cn("text-white")}
+                              >
+                                {expense.category.name}
+                              </Badge>
+                            ) : (
+                              'Uncategorized'
+                            )}
+                          </TableCell>
+                          <TableCell className="px-3 py-4">${expense.amount.toFixed(2)}</TableCell>
+                          <TableCell className="px-3 py-4">
+                            <div className={cn("flex gap-2")}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleOpenDialog(expense)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteExpense(expense._id!)}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
-                  </TableCell>
-                  <TableCell align="right">${expense.amount.toFixed(2)}</TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(expense)}
-                      aria-label="edit"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteExpense(expense._id!)}
-                      aria-label="delete"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-        {expensesData && (
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={totalItems}
-            rowsPerPage={limit}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        )}
-      </TableContainer>
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>{currentExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
-        <DialogContent>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 2 }}>
-              <Stack spacing={3}>
-                <TextField
-                  fullWidth
+            {/* Pagination */}
+            <div className={cn("flex items-center justify-between py-4")}>
+              <div className={cn("flex-1 text-sm text-muted-foreground")}>
+                Showing {paginatedData.length} of {totalItems} expenses
+              </div>
+              <div className={cn("flex items-center space-x-6 lg:space-x-8")}>
+                <div className={cn("flex items-center space-x-2")}>
+                  <p className={cn("text-sm font-medium")}>Rows per page</p>
+                  <Select
+                    value={limit.toString()}
+                    onValueChange={(value) => handleChangeRowsPerPage({ target: { value } } as any)}
+                  >
+                    <SelectTrigger className={cn("h-8 w-[70px]")}>
+                      <SelectValue placeholder={limit.toString()} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[5, 10, 25, 50].map((pageSize) => (
+                        <SelectItem key={pageSize} value={pageSize.toString()}>
+                          {pageSize}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className={cn("flex w-[100px] items-center justify-center text-sm font-medium")}>
+                  Page {page + 1} of {Math.max(1, Math.ceil(totalItems / limit))}
+                </div>
+                <div className={cn("flex items-center space-x-2")}>
+                  <Button
+                    variant="outline"
+                    className={cn("h-8 w-8 p-0")}
+                    onClick={() => handleChangePage(null, page - 1)}
+                    disabled={page === 0}
+                  >
+                    <span className={cn("sr-only")}>Go to previous page</span>
+                    &lt;
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className={cn("h-8 w-8 p-0")}
+                    onClick={() => handleChangePage(null, page + 1)}
+                    disabled={page >= Math.ceil(totalItems / limit) - 1}
+                  >
+                    <span className={cn("sr-only")}>Go to next page</span>
+                    &gt;
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Add/Edit Expense Dialog */}
+        <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <DialogContent>
+            <DialogTitle>{currentExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
+            <form id="expense-form" onSubmit={formik.handleSubmit} className={cn("space-y-4 mt-4")}>
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="amount">Amount</Label>
+                <Input
                   id="amount"
                   name="amount"
-                  label="Amount"
                   type="number"
+                  step="0.01"
                   value={formik.values.amount}
                   onChange={formik.handleChange}
                   required
                 />
-                <TextField
-                  fullWidth
+              </div>
+              
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="description">Description</Label>
+                <Input
                   id="description"
                   name="description"
-                  label="Description"
                   value={formik.values.description}
                   onChange={formik.handleChange}
                   required
                 />
-                <DatePicker
-                  label="Date"
-                  value={formik.values.date}
-                  onChange={(newValue) => {
-                    formik.setFieldValue('date', newValue);
-                  }}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                    },
-                  }}
-                />
-                <FormControl fullWidth>
-                  <InputLabel id="categoryName-label">Category</InputLabel>
-                  <Select
-                    labelId="categoryName-label"
-                    id="categoryName"
-                    name="categoryName"
-                    value={formik.values.categoryName}
-                    onChange={formik.handleChange}
-                    label="Category"
-                  >
-                    <MenuItem value="">Uncategorized</MenuItem>
+              </div>
+              
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="date">Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn("w-full justify-start text-left font-normal")}
+                    >
+                      {formik.values.date 
+                        ? formatDate(formik.values.date)
+                        : <span>Pick a date</span>
+                      }
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className={cn("w-auto p-0")}>
+                    <Calendar
+                      selected={formik.values.date ? new Date(formik.values.date) : undefined}
+                      onSelect={(date: Date | undefined) => handleExpenseDateSelect(date)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className={cn("space-y-2")}>
+                <Label htmlFor="categoryName">Category</Label>
+                <Select
+                  value={formik.values.categoryName}
+                  onValueChange={(value) => formik.setFieldValue('categoryName', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Uncategorized</SelectItem>
                     {categories?.map((category) => (
-                      <MenuItem key={category._id} value={category.name}>
+                      <SelectItem key={category._id} value={category.name}>
                         {category.name}
-                      </MenuItem>
+                      </SelectItem>
                     ))}
-                  </Select>
-                </FormControl>
-              </Stack>
-            </Box>
-          </LocalizationProvider>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            onClick={() => formik.handleSubmit()}
-            variant="contained"
-            color="primary"
-            disabled={isCreating || isUpdating}
-          >
-            {isCreating || isUpdating ? (
-              <CircularProgress size={24} />
-            ) : currentExpense ? (
-              'Update'
-            ) : (
-              'Create'
-            )}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+                  </SelectContent>
+                </Select>
+              </div>
+            </form>
+            
+            <DialogFooter className={cn("mt-4")}>
+              <Button variant="outline" onClick={handleCloseDialog}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                form="expense-form"
+                disabled={isCreating || isUpdating}
+              >
+                {isCreating || isUpdating ? (
+                  <>
+                    <Spinner size="sm" className={cn("mr-2")} />
+                    Loading...
+                  </>
+                ) : currentExpense ? (
+                  'Update'
+                ) : (
+                  'Add'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   );
 };
 

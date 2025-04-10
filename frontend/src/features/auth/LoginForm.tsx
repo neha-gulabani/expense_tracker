@@ -1,9 +1,14 @@
 import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Box, Button, TextField, Typography, Alert, CircularProgress } from '@mui/material';
 import { useLoginMutation } from '../../api/authApi';
 import { useNavigate } from 'react-router-dom';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Loader2 } from 'lucide-react';
+import { Label } from '../../components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
 
 const validationSchema = Yup.object({
   email: Yup.string().email('Enter a valid email').required('Email is required'),
@@ -31,68 +36,74 @@ const LoginForm: React.FC = () => {
   });
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        maxWidth: 400,
-        mx: 'auto',
-        p: 2,
-      }}
-    >
-      <Typography component="h1" variant="h5">
-        Sign In
-      </Typography>
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl text-center font-bold">Sign In</CardTitle>
+      </CardHeader>
       
-      {error && (
-        <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
-          {('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) 
-            ? error.data.message as string 
-            : 'Login failed. Please try again.'}
-        </Alert>
-      )}
-      
-      <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1, width: '100%' }}>
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="email"
-          label="Email Address"
-          name="email"
-          autoComplete="email"
-          autoFocus
-          value={formik.values.email}
-          onChange={formik.handleChange}
-          error={formik.touched.email && Boolean(formik.errors.email)}
-          helperText={formik.touched.email && formik.errors.email}
-        />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          name="password"
-          label="Password"
-          type="password"
-          id="password"
-          autoComplete="current-password"
-          value={formik.values.password}
-          onChange={formik.handleChange}
-          error={formik.touched.password && Boolean(formik.errors.password)}
-          helperText={formik.touched.password && formik.errors.password}
-        />
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2 }}
-          disabled={isLoading}
-        >
-          {isLoading ? <CircularProgress size={24} /> : 'Sign In'}
-        </Button>
-      </Box>
-    </Box>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>
+              {('data' in error && error.data && typeof error.data === 'object' && 'message' in error.data) 
+                ? error.data.message as string 
+                : 'Login failed. Please try again.'}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <form onSubmit={formik.handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formik.values.email}
+              onChange={formik.handleChange}
+              className={formik.touched.email && formik.errors.email ? "border-red-500" : ""}
+            />
+            {formik.touched.email && formik.errors.email && (
+              <p className="text-sm text-red-500">{formik.errors.email}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              className={formik.touched.password && formik.errors.password ? "border-red-500" : ""}
+            />
+            {formik.touched.password && formik.errors.password && (
+              <p className="text-sm text-red-500">{formik.errors.password}</p>
+            )}
+          </div>
+          
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Please wait
+              </>
+            ) : (
+              'Sign In'
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

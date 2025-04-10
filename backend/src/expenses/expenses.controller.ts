@@ -40,6 +40,20 @@ import {
       try {
         const result = await this.expensesService.findAll(req.user.id, paginationQuery, filterDto);
         console.log('GET /expenses - Found', result.total, 'expenses');
+        
+        console.log('GET /expenses - Response structure:', {
+          hasData: !!result.data,
+          dataIsArray: Array.isArray(result.data),
+          dataLength: result.data ? result.data.length : 0,
+          firstItem: result.data && result.data.length > 0 ? {
+            _id: result.data[0]._id,
+            description: result.data[0].description,
+            amount: result.data[0].amount,
+            date: result.data[0].date,
+            hasCategory: !!result.data[0].category
+          } : 'No items'
+        });
+        
         return result;
       } catch (error) {
         console.error('GET /expenses - Error:', error.message);
@@ -47,6 +61,88 @@ import {
       }
     }
   
+    @Get('recent')
+    async getRecentExpenses(@Request() req) {
+      console.log('GET /expenses/recent - User:', req.user.id);
+      
+      try {
+        // Use the existing findAll method but with hardcoded pagination
+        const paginationQuery = { limit: 5, page: 1 };
+        const filterDto = {}; // No filters for recent expenses
+        
+        const result = await this.expensesService.findAll(req.user.id, paginationQuery, filterDto);
+        console.log('GET /expenses/recent - Found', result.total, 'expenses');
+        
+        // Add detailed logging about the response structure
+        console.log('GET /expenses/recent - Response structure:', {
+          hasData: !!result.data,
+          dataIsArray: Array.isArray(result.data),
+          dataLength: result.data ? result.data.length : 0,
+          firstItem: result.data && result.data.length > 0 ? {
+            _id: result.data[0]._id,
+            description: result.data[0].description,
+            amount: result.data[0].amount,
+            date: result.data[0].date,
+            hasCategory: !!result.data[0].category
+          } : 'No items'
+        });
+        
+        // Return just the data array for simplicity
+        return result.data;
+      } catch (error) {
+        console.error('GET /expenses/recent - Error:', error.message);
+        throw error;
+      }
+    }
+
+    @Get('analytics/daily')
+    async getDailyExpenses(
+      @Request() req,
+      @Query('startDate') startDate: string,
+      @Query('endDate') endDate: string,
+    ) {
+      console.log(
+        `Getting daily expenses for user: ${
+          req.user.id
+        } with dates: ${startDate} ${endDate}`,
+      );
+      const start = startDate ? new Date(startDate) : new Date();
+      start.setDate(start.getDate() - 30); // Default to last 30 days
+      const end = endDate ? new Date(endDate) : new Date();
+  
+      const data = await this.expensesService.getDailyExpenses(
+        req.user.id,
+        start,
+        end,
+      );
+      console.log('Daily expenses data:', data);
+      return data;
+    }
+  
+    @Get('analytics/category')
+    async getCategoryTotals(
+      @Request() req,
+      @Query('startDate') startDate: string,
+      @Query('endDate') endDate: string,
+    ) {
+      console.log(
+        `Getting category totals for user: ${
+          req.user.id
+        } with dates: ${startDate} ${endDate}`,
+      );
+      const start = startDate ? new Date(startDate) : new Date();
+      start.setDate(start.getDate() - 30); // Default to last 30 days
+      const end = endDate ? new Date(endDate) : new Date();
+  
+      const data = await this.expensesService.getCategoryTotals(
+        req.user.id,
+        start,
+        end,
+      );
+      console.log('Category totals data:', data);
+      return data;
+    }
+
     @Get(':id')
     findOne(@Request() req, @Param('id') id: string) {
       return this.expensesService.findOne(req.user.id, id);
@@ -64,47 +160,5 @@ import {
     @Delete(':id')
     remove(@Request() req, @Param('id') id: string) {
       return this.expensesService.remove(req.user.id, id);
-    }
-  
-    @Get('analytics/daily')
-    async getDailyExpenses(
-      @Request() req,
-      @Query('startDate') startDate: string,
-      @Query('endDate') endDate: string,
-    ) {
-      console.log('Getting daily expenses for user:', req.user.id, 'with dates:', startDate, endDate);
-      
-      return await this.expensesService.getDailyExpenses(
-        req.user.id,
-        new Date(startDate || new Date().setDate(new Date().getDate() - 30)),
-        new Date(endDate || new Date()),
-      ).then(data => {
-        console.log('Daily expenses data:', data);
-        return data;
-      }).catch(err => {
-        console.error('Error getting daily expenses:', err);
-        return err;
-      })
-    }
-
-    @Get('analytics/category')
-    async getCategoryTotals(
-      @Request() req,
-      @Query('startDate') startDate: string,
-      @Query('endDate') endDate: string,
-    ) {
-      console.log('Getting category totals for user:', req.user.id, 'with dates:', startDate, endDate);
-      
-      return await this.expensesService.getCategoryTotals(
-        req.user.id,
-        new Date(startDate || new Date().setDate(new Date().getDate() - 30)),
-        new Date(endDate || new Date()),
-      ).then(data => {
-        console.log('Category totals data:', data);
-        return data;
-      }).catch(err => {
-        console.error('Error getting category totals:', err);
-        return err;
-      });
     }
   }

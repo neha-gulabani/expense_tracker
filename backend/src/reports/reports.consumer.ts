@@ -8,6 +8,7 @@ export class ReportsConsumer {
   @EventPattern('generate_report')
   async handleGenerateReport(data: any) {
     this.logger.log(`Received report generation request for user: ${data.userId}`);
+    this.logger.log(`Report data received: ${JSON.stringify(data, null, 2)}`);
 
     try {
       // In a real application, we would generate a PDF/HTML report here

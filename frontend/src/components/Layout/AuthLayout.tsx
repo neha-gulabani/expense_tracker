@@ -1,8 +1,8 @@
 import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { Box, Container, Paper, Typography } from '@mui/material';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
+import { Card, CardContent } from '../../components/ui/card';
 
 const AuthLayout: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -12,24 +12,16 @@ const AuthLayout: React.FC = () => {
   }
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f5f5f5',
-      }}
-    >
-      <Container maxWidth="sm">
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-          <Typography variant="h4" component="h1" align="center" gutterBottom>
-            Expense Tracker
-          </Typography>
-          <Outlet />
-        </Paper>
-      </Container>
-    </Box>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md p-4">
+        <Card className="w-full">
+          <CardContent className="pt-6">
+            <h1 className="text-2xl font-bold text-center mb-6">Expense Tracker</h1>
+            <Outlet />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 

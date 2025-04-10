@@ -1,26 +1,29 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Chip,
-} from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle
+} from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHeader,
+  TableHead, 
+  TableRow 
+} from '../components/ui/table';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogFooter, 
+  DialogTitle 
+} from '../components/ui/dialog';
+import { Spinner } from '../components/ui/spinner';
+import { cn } from '../lib/utils';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useGetCategoriesQuery, useCreateCategoryMutation, useUpdateCategoryMutation, useDeleteCategoryMutation } from '../api/categoriesApi';
@@ -39,13 +42,12 @@ const CategoriesPage: React.FC = () => {
   const { data: categories, isLoading } = useGetCategoriesQuery();
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
-  const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
+  const [deleteCategory] = useDeleteCategoryMutation();
 
-  // Category form
   const formik = useFormik({
     initialValues: {
       name: '',
-      color: '#3f51b5', // Default color
+      color: '#1976d2',
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -53,12 +55,17 @@ const CategoriesPage: React.FC = () => {
         if (selectedCategory) {
           await updateCategory({
             id: selectedCategory._id!,
-            category: values,
+            category: {
+              name: values.name,
+              color: values.color,
+            },
           }).unwrap();
         } else {
-          await createCategory(values).unwrap();
+          await createCategory({
+            name: values.name,
+            color: values.color,
+          }).unwrap();
         }
-
         handleCloseDialog();
       } catch (error) {
         console.error('Failed to save category:', error);
@@ -71,7 +78,7 @@ const CategoriesPage: React.FC = () => {
       setSelectedCategory(category);
       formik.setValues({
         name: category.name,
-        color: category.color || '#3f51b5',
+        color: category.color || '#1976d2',
       });
     } else {
       setSelectedCategory(null);
@@ -82,12 +89,11 @@ const CategoriesPage: React.FC = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedCategory(null);
     formik.resetForm();
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this category? This may affect expenses that use this category.')) {
+    if (window.confirm('Are you sure you want to delete this category?')) {
       try {
         await deleteCategory(id).unwrap();
       } catch (error) {
@@ -97,129 +103,126 @@ const CategoriesPage: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Categories
-      </Typography>
+    <Card>
+      <CardHeader>
+        <CardTitle>Categories</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Button onClick={() => handleOpenDialog()} className={cn("mb-4")}>Add Category</Button>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Add Category
-        </Button>
-      </Stack>
-
-      {/* Categories Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Color</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={3} align="center">
-                  <CircularProgress />
-                </TableCell>
+        {/* Categories Table */}
+        <div className="w-full overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Name</TableHead>
+                <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Color</TableHead>
+                <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Actions</TableHead>
               </TableRow>
-            ) : categories?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} align="center">
-                  No categories found
-                </TableCell>
-              </TableRow>
-            ) : (
-              categories?.map((category) => (
-                <TableRow key={category._id}>
-                  <TableCell>{category.name}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={category.name}
-                      size="small"
-                      sx={{
-                        backgroundColor: category.color || '#e0e0e0',
-                        color: '#fff',
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(category)}
-                      aria-label="edit"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteCategory(category._id!)}
-                      aria-label="delete"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center">
+                    <Spinner />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ) : categories?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} align="center">
+                    No categories found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                categories?.map((category: Category) => (
+                  <TableRow key={category._id}>
+                    <TableCell className="px-6 py-4">{category.name}</TableCell>
+                    <TableCell className="px-6 py-4">
+                      <div 
+                        className="h-6 w-6 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                    </TableCell>
+                    <TableCell className="px-6 py-4">
+                      <div className={cn("flex gap-2")}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleOpenDialog(category)}
+                          aria-label="edit"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteCategory(category._id!)}
+                          aria-label="delete"
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
 
       {/* Add/Edit Category Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>{selectedCategory ? 'Edit Category' : 'Add Category'}</DialogTitle>
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogContent>
-          <Box component="form" onSubmit={formik.handleSubmit} sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="name"
-              label="Name"
-              name="name"
-              value={formik.values.name}
-              onChange={formik.handleChange}
-              error={formik.touched.name && Boolean(formik.errors.name)}
-              helperText={formik.touched.name && formik.errors.name}
-            />
-            <TextField
-              margin="normal"
-              fullWidth
-              id="color"
-              label="Color"
-              name="color"
-              type="color"
-              value={formik.values.color}
-              onChange={formik.handleChange}
-              InputLabelProps={{ shrink: true }}
-            />
-          </Box>
+          <DialogTitle>{selectedCategory ? 'Edit Category' : 'Add Category'}</DialogTitle>
+          <form id="category-form" onSubmit={formik.handleSubmit} className={cn("space-y-4 mt-4")}>
+            <div className={cn("space-y-2")}>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                type="text"
+                id="name"
+                name="name"
+                value={formik.values.name}
+                onChange={formik.handleChange}
+                className={cn(formik.touched.name && formik.errors.name ? "border-red-500" : "")}
+              />
+              {formik.touched.name && formik.errors.name && (
+                <p className={cn("text-red-500 text-sm")}>{formik.errors.name}</p>
+              )}
+            </div>
+            <div className={cn("space-y-2")}>
+              <Label htmlFor="color">Color</Label>
+              <Input
+                type="color"
+                id="color"
+                name="color"
+                value={formik.values.color}
+                onChange={formik.handleChange}
+              />
+            </div>
+          </form>
+          <DialogFooter className={cn("mt-4")}>
+            <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+            <Button
+              type="submit"
+              form="category-form"
+              disabled={isCreating || isUpdating}
+            >
+              {isCreating || isUpdating ? (
+                <>
+                  <Spinner size="sm" className={cn("mr-2")} />
+                  Loading...
+                </>
+              ) : selectedCategory ? (
+                'Update'
+              ) : (
+                'Add'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            onClick={() => formik.handleSubmit()}
-            variant="contained"
-            disabled={isCreating || isUpdating}
-          >
-            {isCreating || isUpdating ? (
-              <CircularProgress size={24} />
-            ) : selectedCategory ? (
-              'Update'
-            ) : (
-              'Add'
-            )}
-          </Button>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </Card>
   );
 };
 

@@ -1,9 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { DatePickerProvider } from './components/ui/date-picker-provider';
 
 // Layouts
 import MainLayout from './components/Layout/MainLayout';
@@ -19,48 +17,37 @@ import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+// Theme provider
+import { ThemeProvider } from './components/ui/theme-provider';
 
 function App() {
   return (
     <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <CssBaseline />
-          <Router>
-            <Routes>
-              {/* Auth Routes */}
-              <Route element={<AuthLayout />}>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+      <ThemeProvider defaultTheme="light" storageKey="expense-tracker-theme">
+        <DatePickerProvider>
+          <Routes>
+            {/* Auth Routes */}
+            <Route element={<AuthLayout />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Route>
+            
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<MainLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/expenses" element={<Expenses />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/recurring-expenses" element={<RecurringExpenses />} />
+                <Route path="/reports" element={<Reports />} />
               </Route>
-              
-              {/* Protected Routes */}
-              <Route element={<ProtectedRoute />}>
-                <Route element={<MainLayout />}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/expenses" element={<Expenses />} />
-                  <Route path="/categories" element={<Categories />} />
-                  <Route path="/recurring-expenses" element={<RecurringExpenses />} />
-                  <Route path="/reports" element={<Reports />} />
-                </Route>
-              </Route>
-              
-              {/* Redirect root to dashboard or login */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Router>
-        </LocalizationProvider>
+            </Route>
+            
+            {/* Redirect root to dashboard or login */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </DatePickerProvider>
       </ThemeProvider>
     </Provider>
   );
