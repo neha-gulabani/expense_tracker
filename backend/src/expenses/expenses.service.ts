@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Expense, ExpenseDocument } from './schemas/expense.schema';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -81,6 +81,8 @@ export class ExpensesService {
       .populate('category')
       .exec();
 
+      console.log('returning expenses')
+
     return {
       data: expenses,
       total,
@@ -119,10 +121,20 @@ export class ExpensesService {
   }
 
   async getDailyExpenses(userId: string, startDate: Date, endDate: Date): Promise<any[]> {
+    console.log('daily expense data:',
+      this.expenseModel.aggregate([
+        {
+          $match:{
+            user:userId,
+            date: { $gte: startDate, $lte: endDate },
+          }
+        }
+      ])
+    )
     return this.expenseModel.aggregate([
       {
         $match: {
-          user: userId,
+          user: new Types.ObjectId(userId),
           date: { $gte: startDate, $lte: endDate },
         },
       },
@@ -135,6 +147,47 @@ export class ExpensesService {
       },
       {
         $sort: { _id: 1 },
+      },
+    ]);
+  }
+
+  async getCategoryTotals(userId: string, startDate: Date, endDate: Date): Promise<any[]> {
+    return this.expenseModel.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(userId),
+          date: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'categoryData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$categoryData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: { $ifNull: ['$categoryData.name', 'Uncategorized'] },
+          amount: { $sum: '$amount' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: '$_id',
+          amount: 1,
+        },
+      },
+      {
+        $sort: { amount: -1 },
       },
     ]);
   }

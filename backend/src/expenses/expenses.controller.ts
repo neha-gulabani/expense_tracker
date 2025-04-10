@@ -28,13 +28,23 @@ import {
     }
   
     @Get()
-    findAll(
+    async findAll(
       @Request() req,
       @Query() paginationQuery: PaginationQueryDto,
       @Query() filterDto: FilterExpenseDto,
     ) {
-      console.log('Filtering expenses with:', filterDto, req.user.id, paginationQuery);
-      return this.expensesService.findAll(req.user.id, paginationQuery, filterDto);
+      console.log('GET /expenses - User:', req.user.id);
+      console.log('GET /expenses - Pagination:', paginationQuery);
+      console.log('GET /expenses - Filters:', filterDto);
+      
+      try {
+        const result = await this.expensesService.findAll(req.user.id, paginationQuery, filterDto);
+        console.log('GET /expenses - Found', result.total, 'expenses');
+        return result;
+      } catch (error) {
+        console.error('GET /expenses - Error:', error.message);
+        throw error;
+      }
     }
   
     @Get(':id')
@@ -57,16 +67,44 @@ import {
     }
   
     @Get('analytics/daily')
-    getDailyExpenses(
+    async getDailyExpenses(
       @Request() req,
       @Query('startDate') startDate: string,
       @Query('endDate') endDate: string,
     ) {
       console.log('Getting daily expenses for user:', req.user.id, 'with dates:', startDate, endDate);
-      return this.expensesService.getDailyExpenses(
+      
+      return await this.expensesService.getDailyExpenses(
         req.user.id,
         new Date(startDate || new Date().setDate(new Date().getDate() - 30)),
         new Date(endDate || new Date()),
-      );
+      ).then(data => {
+        console.log('Daily expenses data:', data);
+        return data;
+      }).catch(err => {
+        console.error('Error getting daily expenses:', err);
+        return err;
+      })
+    }
+
+    @Get('analytics/category')
+    async getCategoryTotals(
+      @Request() req,
+      @Query('startDate') startDate: string,
+      @Query('endDate') endDate: string,
+    ) {
+      console.log('Getting category totals for user:', req.user.id, 'with dates:', startDate, endDate);
+      
+      return await this.expensesService.getCategoryTotals(
+        req.user.id,
+        new Date(startDate || new Date().setDate(new Date().getDate() - 30)),
+        new Date(endDate || new Date()),
+      ).then(data => {
+        console.log('Category totals data:', data);
+        return data;
+      }).catch(err => {
+        console.error('Error getting category totals:', err);
+        return err;
+      });
     }
   }

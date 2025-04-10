@@ -6,7 +6,8 @@ import {
   PaginatedResponse, 
   PaginationQueryDto, 
   UpdateExpenseDto,
-  DailyExpenseData
+  DailyExpenseData,
+  CategoryTotal
 } from '../types';
 import { format, subDays } from 'date-fns';
 
@@ -139,6 +140,89 @@ export const expensesApi = baseApi.injectEndpoints({
       },
       providesTags: [{ type: 'Expenses', id: 'DAILY' }],
     }),
+    getCategoryTotals: builder.query<CategoryTotal[], void>({      
+      query: () => {
+        // Include default date range for last 30 days
+        const endDate = format(new Date(), 'yyyy-MM-dd');
+        const startDate = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+        
+        console.log('Requesting category totals with date range:', { startDate, endDate });
+        
+        return {
+          url: `/expenses/analytics/category?startDate=${startDate}&endDate=${endDate}`,
+          method: 'GET',
+        };
+      },
+      transformResponse: (response: any) => {
+        console.log('Raw category totals response:', response);
+        
+        // If response is empty or null, return empty array
+        if (!response) {
+          console.log('Response is null or undefined, returning empty array');
+          return [];
+        }
+        
+        // If response is not an array, wrap it in an array
+        if (!Array.isArray(response)) {
+          console.log('Response is not an array, wrapping it:', response);
+          // If it's an object with expected properties, wrap it
+          if (response.category && typeof response.amount !== 'undefined') {
+            return [response];
+          }
+          // If it's some other type of object, try to extract data property
+          if (response.data && Array.isArray(response.data)) {
+            return response.data;
+          }
+          // Last resort, return empty array
+          return [];
+        }
+        
+        console.log('Response is an array with length:', response.length);
+        return response;
+      },
+      providesTags: [{ type: 'Expenses', id: 'CATEGORY' }],
+    }),
+    getRecentExpenses: builder.query<Expense[], void>({      
+      query: () => {
+        console.log('Making getRecentExpenses API request');
+        return {
+          url: `/expenses?limit=5&page=1`,
+          method: 'GET',
+        };
+      },
+      transformResponse: (response: any) => {
+        console.log('Raw recent expenses response:', response);
+        
+        // If response is empty or null, return empty array
+        if (!response) {
+          console.log('Recent expenses response is null or undefined');
+          return [];
+        }
+        
+        // If response has data property (paginated response)
+        if (response.data && Array.isArray(response.data)) {
+          console.log('Recent expenses response has data array with length:', response.data.length);
+          return response.data;
+        }
+        
+        // If response is already an array
+        if (Array.isArray(response)) {
+          console.log('Recent expenses response is an array with length:', response.length);
+          return response;
+        }
+        
+        // If response is a single object, wrap it in an array
+        if (typeof response === 'object') {
+          console.log('Recent expenses response is a single object');
+          return [response];
+        }
+        
+        // Fallback
+        console.log('Recent expenses response format not recognized');
+        return [];
+      },
+      providesTags: [{ type: 'Expenses', id: 'LIST' }],
+    }),
   }),
 });
 
@@ -149,4 +233,6 @@ export const {
   useUpdateExpenseMutation,
   useDeleteExpenseMutation,
   useGetDailyExpensesQuery,
+  useGetCategoryTotalsQuery,
+  useGetRecentExpensesQuery,
 } = expensesApi;
