@@ -1,4 +1,4 @@
-// src/reports/reports.service.ts
+
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
@@ -6,21 +6,19 @@ import { Model } from 'mongoose';
 import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { ExpensesService } from '../expenses/expenses.service';
+import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
+import { GENERATE_REPORT_PATTERN } from '../../constants';
 
 interface ReportData {
   userId: string;
-  userEmail: string;
   userName: string;
-  startDate: Date;
-  endDate: Date;
+  userEmail: string;
   month: string;
   year: number;
+  format: string;
   totalExpenses: number;
   categoryTotals: Record<string, number>;
-  expenses: any[];
-  format: string;
-  generatedAt: Date;
 }
 
 @Injectable()
@@ -88,7 +86,7 @@ export class ReportsService {
       })}`);
       
       // Emit the event to RabbitMQ
-      this.client.emit('generate_report', reportData);
+      this.client.emit(GENERATE_REPORT_PATTERN, reportData);
       
       this.logger.log(`Report generation successfully queued for user: ${reportData.userId}`);
       return true;
@@ -96,6 +94,52 @@ export class ReportsService {
       this.logger.error(`Error queueing report generation: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  // Generate report for a specific month and year
+  async generateReport(userId: string, startDate: Date, endDate: Date, format: string): Promise<ReportData> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+   
+    const expenses = await this.expensesService.findByDateRange(userId, startDate, endDate);
+    
+  
+    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    
+   
+    const categoryTotals: Record<string, number> = {};
+    for (const expense of expenses) {
+      if (expense.category) {
+        const categoryName = expense.category.name || 'Uncategorized';
+        categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + expense.amount;
+      } else {
+        categoryTotals['Uncategorized'] = (categoryTotals['Uncategorized'] || 0) + expense.amount;
+      }
+    }
+    
+    // Extract month and year from the startDate for reporting purposes
+    const month = new Date(startDate).toLocaleString('default', { month: 'long' });
+    const year = new Date(startDate).getFullYear();
+    
+ 
+    const reportData: ReportData = {
+      userId,
+      userName: user.name,
+      userEmail: user.email,
+      month,
+      year,
+      format,
+      totalExpenses,
+      categoryTotals,
+    };
+    
+   
+    await this.queueReportGeneration(reportData);
+    
+    return reportData;
   }
 
   // Generate reports at the beginning of each month
@@ -139,15 +183,11 @@ export class ReportsService {
           userId: user._id ? user._id.toString() : '',
           userEmail: user.email,
           userName: user.name,
-          startDate: lastMonth,
-          endDate: endOfLastMonth,
           month: monthName,
           year,
           totalExpenses,
           categoryTotals,
-          expenses,
           format: 'pdf',
-          generatedAt: new Date()
         });
         
       } catch (error) {

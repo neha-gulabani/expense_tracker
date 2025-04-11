@@ -1,4 +1,4 @@
-// src/categories/categories.module.ts
+
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CategoriesService } from './categories.service';

@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { Label } from '../../components/ui/label';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/Card/Card';
 
 const validationSchema = Yup.object({
   email: Yup.string().email('Enter a valid email').required('Email is required'),
@@ -30,18 +30,18 @@ const LoginForm: React.FC = () => {
         await login(values).unwrap();
         navigate('/dashboard');
       } catch (err) {
-        // Error is handled by the RTK Query hook
+        console.log(err);
       }
     },
   });
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center font-bold">Sign In</CardTitle>
-      </CardHeader>
+   <>
+     
+        <p className="text-lg text-center ">Sign In</p>
+     
       
-      <CardContent>
+  
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertDescription>
@@ -53,7 +53,7 @@ const LoginForm: React.FC = () => {
         )}
         
         <form onSubmit={formik.handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label htmlFor="email">Email Address</Label>
             <Input
               id="email"
@@ -70,7 +70,7 @@ const LoginForm: React.FC = () => {
             )}
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
@@ -102,8 +102,10 @@ const LoginForm: React.FC = () => {
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+
+        </>
+
+   
   );
 };
 

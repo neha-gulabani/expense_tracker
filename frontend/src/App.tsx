@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { store } from './store';
+import { store } from './store/index';
 import { DatePickerProvider } from './components/ui/date-picker-provider';
 
 // Layouts
@@ -10,9 +10,9 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
 import Dashboard from './pages/Dashboard';
-import Expenses from './pages/Expenses';
-import Categories from './pages/Categories';
-import RecurringExpenses from './pages/RecurringExpenses';
+import Expenses from './pages/expenses/Expenses';
+import Categories from './pages/categories/Categories';
+import RecurringExpenses from './pages/recurringexpenses/RecurringExpenses';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Register from './pages/Register';

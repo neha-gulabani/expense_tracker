@@ -25,54 +25,24 @@ export class ReportsController {
       const startDate = new Date(generateReportDto.startDate);
       const endDate = new Date(generateReportDto.endDate);
       
-      // Get the user from the request
-      const userId = req.user.id;
-      const userEmail = req.user.email;
-      const userName = req.user.name;
-      
-      // Get expenses for the date range
-      const expenses = await this.reportsService.getExpensesForDateRange(
-        userId,
-        startDate,
-        endDate
-      );
-      
-      // Calculate summary data
-      const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-      const categoryTotals = {};
-      
-      expenses.forEach(expense => {
-        const categoryName = expense.category ? expense.category.name : 'Uncategorized';
-        if (!categoryTotals[categoryName]) {
-          categoryTotals[categoryName] = 0;
-        }
-        categoryTotals[categoryName] += expense.amount;
-      });
-      
-      // Extract month and year for compatibility with the consumer
-      const month = startDate.toLocaleString('default', { month: 'long' });
-      const year = startDate.getFullYear();
-      
-      // Send report data to RabbitMQ
-      await this.reportsService.queueReportGeneration({
-        userId,
-        userEmail,
-        userName,
+      // Generate the report using the service
+      const reportData = await this.reportsService.generateReport(
+        req.user.id,
         startDate,
         endDate,
-        month,
-        year,
-        totalExpenses,
-        categoryTotals,
-        expenses,
-        format: generateReportDto.format || 'pdf',
-        generatedAt: new Date()
-      });
+        generateReportDto.format || 'pdf'
+      );
       
-      return { success: true, message: 'Report generation initiated. It will be sent to your email shortly.' };
+      return {
+        success: true,
+        message: `Report generation has been queued. It will be sent to ${reportData.userEmail} when ready.`,
+      };
     } catch (error) {
       this.logger.error(`Error generating report: ${error.message}`, error.stack);
-      return { success: false, message: 'Failed to generate report. Please try again later.' };
+      return {
+        success: false,
+        message: `Failed to generate report: ${error.message}`,
+      };
     }
   }
 }

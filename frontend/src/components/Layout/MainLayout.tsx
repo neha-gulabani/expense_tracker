@@ -41,9 +41,7 @@ const MainLayout: React.FC = () => {
 
   const SideNav = () => (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b">
-        <h2 className="text-xl font-semibold">Expense Tracker</h2>
-      </div>
+      
       <ScrollArea className="flex-1">
         <nav className="px-2 py-4">
           <ul className="space-y-1">
@@ -77,24 +75,20 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Desktop Sidebar */}
+     
       <div className="hidden md:block w-[240px] border-r">
         <SideNav />
       </div>
 
-      {/* Mobile Sidebar */}
+    
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetTrigger asChild className="md:hidden">
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
+        
         <SheetContent side="left" className="p-0 w-[240px]">
           <SideNav />
         </SheetContent>
       </Sheet>
 
-      {/* Main Content */}
+   
       <div className="flex-1">
         <header className="h-14 border-b flex items-center px-4 sticky top-0 bg-background z-10">
           <div className="md:hidden mr-2">
@@ -103,14 +97,11 @@ const MainLayout: React.FC = () => {
             </Button>
           </div>
           <div className="flex-1">
-            <h1 className="text-lg font-medium">
+            <h1 className='mb-2'>
               {user?.name ? `Welcome, ${user.name}` : 'Expense Tracker'}
             </h1>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+         
         </header>
         <main className="p-4">
           <Outlet />

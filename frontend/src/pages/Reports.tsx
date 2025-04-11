@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { useGetExpensesQuery, useGenerateReportMutation } from '../api/expensesApi';
+import { useGetExpensesQuery, useGenerateReportMutation } from '../api/baseApi';
 import { Expense, GenerateReportParams } from '../types';
 import { Button } from '../components/ui/button';
 import { DatePicker } from '../components/ui/date-picker';
 import { Spinner } from '../components/ui/spinner';
 import { Alert, AlertDescription } from '../components/ui/alert'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/Card/Card';
+import { COLORS } from '../../constants';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#8DD1E1'];
 
 interface CategoryDataItem {
   name: string;
@@ -22,20 +22,27 @@ const ReportsPage: React.FC = () => {
   const [reportGenerated, setReportGenerated] = useState<boolean>(false);
   const [reportError, setReportError] = useState<string | null>(null);
 
-  // Calculate the start and end dates for the selected month
+  
   const startDate = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
   const endDate = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
 
-  const { data: expensesData, isLoading, error: expenseError } = useGetExpensesQuery(undefined);
+  const { data: expensesData, isLoading, error: expenseError } = useGetExpensesQuery({
+    page: 1,
+    limit: 1000, 
+    startDate,
+    endDate
+  });
   
   const [generateReport] = useGenerateReportMutation();
 
-  // Process data for pie chart
+ 
   const processCategoryData = (expenses: Expense[]): CategoryDataItem[] => {
     const categoryMap = new Map<string, number>();
     
     expenses.forEach(expense => {
-      const categoryName = expense.category?.name || 'Uncategorized';
+      const categoryName = typeof expense.category === 'string'
+        ? expense.category
+        : expense.category?.name || 'Uncategorized';
       const currentAmount = categoryMap.get(categoryName) || 0;
       categoryMap.set(categoryName, currentAmount + expense.amount);
     });
@@ -46,7 +53,7 @@ const ReportsPage: React.FC = () => {
     }));
   };
 
-  // Filter expenses for the selected month
+ 
   const expenses = expensesData ? expensesData.data.filter((expense: Expense) => {
     const expenseDate = new Date(expense.date);
     const start = new Date(startDate);
@@ -61,21 +68,28 @@ const ReportsPage: React.FC = () => {
       setLoading(true);
       const params: GenerateReportParams = {
         startDate,
-        endDate,
-        format: 'pdf'
+        endDate
       };
-      await generateReport(params).then((response) => {
-        if (response.data && response.data.success) {
-          setReportGenerated(true);
-        } else {
-          setReportError("Failed to generate report. Please try again later.");
-        }
-        setLoading(false);
-      }).catch(error => {
-        console.error('Failed to generate report:', error);
+      
+      const response = await generateReport(params);
+      
+   
+      if ('data' in response && response.data instanceof Blob) {
+       
+        const url = window.URL.createObjectURL(response.data);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `expense-report-${startDate}-to-${endDate}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        
+        setReportGenerated(true);
+      } else {
         setReportError("Failed to generate report. Please try again later.");
-        setLoading(false);
-      });
+      }
+      setLoading(false);
     } catch (error) {
       console.error('Failed to generate report:', error);
       setReportError("Failed to generate report. Please try again later.");

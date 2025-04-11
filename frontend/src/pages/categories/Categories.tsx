@@ -4,10 +4,8 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle
-} from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Label } from '../components/ui/label';
+} from '../../components/Card/Card';
+import { Button } from '../../components/Button/Button';
 import { 
   Table, 
   TableBody, 
@@ -15,20 +13,15 @@ import {
   TableHeader,
   TableHead, 
   TableRow 
-} from '../components/ui/table';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogTitle 
-} from '../components/ui/dialog';
-import { Spinner } from '../components/ui/spinner';
-import { cn } from '../lib/utils';
+} from '../../components/Table/Table';
+import AddCategories from './AddCategories';
+
+import { Spinner } from '../../components/Spinner/Spinner';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { useGetCategoriesQuery, useCreateCategoryMutation, useUpdateCategoryMutation, useDeleteCategoryMutation } from '../api/categoriesApi';
-import { Category } from '../types';
-
+import { useGetCategoriesQuery, useCreateCategoryMutation, useUpdateCategoryMutation, useDeleteCategoryMutation } from '../../api/categoriesApi';
+import { Category } from '../../types';
+import { Plus } from 'lucide-react';
 const validationSchema = Yup.object({
   name: Yup.string().required('Name is required'),
   color: Yup.string(),
@@ -38,7 +31,7 @@ const CategoriesPage: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
-  // API hooks
+ 
   const { data: categories, isLoading } = useGetCategoriesQuery();
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
@@ -103,28 +96,38 @@ const CategoriesPage: React.FC = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="max-w-full mx-auto">
+      <CardHeader className='flex justify-between items-center'>
         <CardTitle>Categories</CardTitle>
+        <Button 
+          variant="primary" 
+          onClick={() => handleOpenDialog()} 
+          className="flex items-center gap-1"
+        >
+          <Plus className="h-4 w-4" />
+          Add Category
+        </Button>
       </CardHeader>
       <CardContent>
-        <Button onClick={() => handleOpenDialog()} className={cn("mb-4")}>Add Category</Button>
+        
 
-        {/* Categories Table */}
+        
         <div className="w-full overflow-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Name</TableHead>
-                <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Color</TableHead>
-                <TableHead className="font-semibold whitespace-nowrap px-6 py-3">Actions</TableHead>
+              <TableRow className="bg-gray-50">
+                <TableHead>Name</TableHead>
+                <TableHead>Color</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={3} align="center">
-                    <Spinner />
+                    <div className="flex justify-center py-4">
+                      <Spinner />
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : categories?.length === 0 ? (
@@ -136,15 +139,15 @@ const CategoriesPage: React.FC = () => {
               ) : (
                 categories?.map((category: Category) => (
                   <TableRow key={category._id}>
-                    <TableCell className="px-6 py-4">{category.name}</TableCell>
-                    <TableCell className="px-6 py-4">
+                    <TableCell>{category.name}</TableCell>
+                    <TableCell>
                       <div 
                         className="h-6 w-6 rounded-full" 
                         style={{ backgroundColor: category.color }}
                       />
                     </TableCell>
-                    <TableCell className="px-6 py-4">
-                      <div className={cn("flex gap-2")}>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -171,57 +174,17 @@ const CategoriesPage: React.FC = () => {
         </div>
       </CardContent>
 
-      {/* Add/Edit Category Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogContent>
-          <DialogTitle>{selectedCategory ? 'Edit Category' : 'Add Category'}</DialogTitle>
-          <form id="category-form" onSubmit={formik.handleSubmit} className={cn("space-y-4 mt-4")}>
-            <div className={cn("space-y-2")}>
-              <Label htmlFor="name">Name</Label>
-              <Input
-                type="text"
-                id="name"
-                name="name"
-                value={formik.values.name}
-                onChange={formik.handleChange}
-                className={cn(formik.touched.name && formik.errors.name ? "border-red-500" : "")}
-              />
-              {formik.touched.name && formik.errors.name && (
-                <p className={cn("text-red-500 text-sm")}>{formik.errors.name}</p>
-              )}
-            </div>
-            <div className={cn("space-y-2")}>
-              <Label htmlFor="color">Color</Label>
-              <Input
-                type="color"
-                id="color"
-                name="color"
-                value={formik.values.color}
-                onChange={formik.handleChange}
-              />
-            </div>
-          </form>
-          <DialogFooter className={cn("mt-4")}>
-            <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-            <Button
-              type="submit"
-              form="category-form"
-              disabled={isCreating || isUpdating}
-            >
-              {isCreating || isUpdating ? (
-                <>
-                  <Spinner size="sm" className={cn("mr-2")} />
-                  Loading...
-                </>
-              ) : selectedCategory ? (
-                'Update'
-              ) : (
-                'Add'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddCategories
+        openDialog={openDialog}
+        handleCloseDialog={handleCloseDialog}
+        selectedCategory={selectedCategory}
+        formik={formik}
+        isCreating={isCreating}
+        isUpdating={isUpdating}
+      />
+
+     
+     
     </Card>
   );
 };

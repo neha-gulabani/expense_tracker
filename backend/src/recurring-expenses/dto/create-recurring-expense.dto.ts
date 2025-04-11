@@ -1,28 +1,33 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, IsDateString, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional, IsString, IsDateString, IsBoolean, Min, IsMongoId } from 'class-validator';
 import { RecurringInterval } from '../schemas/recurring-expense.schema';
 
 export class CreateRecurringExpenseDto {
-  @IsNumber()
   @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
   amount: number;
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   description: string;
 
-  @IsEnum(RecurringInterval)
   @IsNotEmpty()
-  interval: RecurringInterval;
+  @IsString()
+  frequency: string;
 
-  @IsDateString()
   @IsNotEmpty()
+  @IsDateString()
   startDate: string;
 
-  @IsDateString()
   @IsOptional()
+  @IsDateString()
   endDate?: string;
 
-  @IsString()
+  @IsNotEmpty()
+  @IsMongoId()
+  categoryId: string;
+
   @IsOptional()
-  categoryName?: string;
+  @IsBoolean()
+  isActive?: boolean;
 }

@@ -1,4 +1,4 @@
-// src/expenses/expenses.module.ts
+/expenses/expenses.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ExpensesService } from './expenses.service';

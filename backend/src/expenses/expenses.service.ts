@@ -7,6 +7,12 @@ import { UpdateExpenseDto } from './dto/update-expense.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { FilterExpenseDto } from './dto/filter-expense.dto';
+import { format } from 'date-fns';
+
+interface DailyExpenseResult {
+  date: string;
+  amount: number;
+}
 
 @Injectable()
 export class ExpensesService {
@@ -16,26 +22,53 @@ export class ExpensesService {
   ) {}
 
   async create(userId: string, createExpenseDto: CreateExpenseDto): Promise<Expense> {
-    const { categoryName, ...expenseData } = createExpenseDto;
-    
-    // Find or create category if categoryName is provided
-    let categoryId: string | undefined = undefined;
-    if (categoryName) {
-      const category = await this.categoriesService.findOrCreate(
-        userId,
-        categoryName,
-      );
-      categoryId = category._id;
-    }
+    try {
+      console.log('Creating expense with data:', { userId, createExpenseDto });
+      const { categoryName, ...expenseData } = createExpenseDto;
+      
+   
+      let categoryId: string | undefined = undefined;
+      if (categoryName) {
+        try {
+          const category = await this.categoriesService.findOrCreate(
+            userId,
+            categoryName,
+          );
+          categoryId = category._id;
+          console.log('Found/created category:', { categoryId, categoryName });
+        } catch (error) {
+          console.error('Error finding/creating category:', error);
+          throw new Error('Failed to process category');
+        }
+      }
 
-    const expense = new this.expenseModel({
-      ...expenseData,
-      category: categoryId,
-      user: userId,
-      date: createExpenseDto.date || new Date(),
-    });
+     
+      const expense = new this.expenseModel({
+        ...expenseData,
+        category: categoryId,
+        user: userId,
+        date: createExpenseDto.date || new Date(),
+      });
+      
+      console.log('Saving expense:', expense);
+      const savedExpense = await expense.save();
+      console.log('Saved expense:', savedExpense);
+      
     
-    return expense.save();
+      const populatedExpense = await this.expenseModel
+        .findById(savedExpense._id)
+        .populate('category')
+        .exec();
+        
+      if (!populatedExpense) {
+        throw new Error('Failed to retrieve created expense');
+      }
+      
+      return populatedExpense;
+    } catch (error) {
+      console.error('Error creating expense:', error);
+      throw new Error('Failed to create expense: ' + error.message);
+    }
   }
 
   async findAll(
@@ -46,49 +79,86 @@ export class ExpensesService {
     const { page = 1, limit = 10 } = paginationQuery;
     const skip = (page - 1) * limit;
 
-    // Build filter query
     const query: any = { user: userId };
     
+ 
+    const dateFilter: any = {};
     if (filterDto.startDate) {
-      query.date = { $gte: new Date(filterDto.startDate) };
+      dateFilter.$gte = new Date(filterDto.startDate);
     }
-    
     if (filterDto.endDate) {
-      query.date = { ...query.date, $lte: new Date(filterDto.endDate) };
+      dateFilter.$lte = new Date(filterDto.endDate);
+    }
+    if (Object.keys(dateFilter).length > 0) {
+      query.date = dateFilter;
     }
     
+ 
     if (filterDto.category) {
-      query.category = filterDto.category;
+      try {
+        query.category = new Types.ObjectId(filterDto.category);
+      } catch (error) {
+        console.error('Invalid category ID:', filterDto.category);
+       
+        return {
+          data: [],
+          total: 0,
+          page,
+          limit,
+        };
+      }
     }
 
-    if (filterDto.minAmount) {
-      query.amount = { $gte: filterDto.minAmount };
+   
+    const amountFilter: any = {};
+    if (filterDto.minAmount !== undefined && filterDto.minAmount !== null) {
+      amountFilter.$gte = Number(filterDto.minAmount);
+    }
+    if (filterDto.maxAmount !== undefined && filterDto.maxAmount !== null) {
+      amountFilter.$lte = Number(filterDto.maxAmount);
+    }
+    if (Object.keys(amountFilter).length > 0) {
+      query.amount = amountFilter;
     }
 
-    if (filterDto.maxAmount) {
-      query.amount = { ...query.amount, $lte: filterDto.maxAmount };
-    }
+   
 
-    // Get total count for pagination
-    const total = await this.expenseModel.countDocuments(query);
+    try {
     
-    // Get expenses with pagination
-    const expenses = await this.expenseModel
-      .find(query)
-      .sort({ date: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate('category')
-      .exec();
+      const total = await this.expenseModel.countDocuments(query);
+      
+    
+      const expenses = await this.expenseModel
+        .find(query)
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('category')
+        .exec();
 
-      console.log('returning expenses')
+      console.log(`Found ${expenses.length} expenses out of ${total} total`);
 
-    return {
-      data: expenses,
-      total,
-      page,
-      limit,
-    };
+      const dailyExpenses = expenses.reduce((acc: { [date: string]: number }, expense) => {
+        const date = format(expense.date, 'yyyy-MM-dd');
+        acc[date] = (acc[date] || 0) + expense.amount;
+        return acc;
+      }, {});
+
+      return {
+        data: expenses,
+        total,
+        page,
+        limit,
+      };
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+      return {
+        data: [],
+        total: 0,
+        page,
+        limit,
+      };
+    }
   }
 
   async findOne(userId: string, id: string): Promise<Expense | null> {
@@ -101,7 +171,7 @@ export class ExpensesService {
   async update(userId: string, id: string, updateExpenseDto: UpdateExpenseDto): Promise<Expense | null> {
     const { categoryName, ...updateData } = updateExpenseDto;
     
-    // Find or create category if categoryName is provided
+ 
     if (categoryName) {
       const category = await this.categoriesService.findOrCreate(
         userId,
@@ -120,75 +190,134 @@ export class ExpensesService {
     return this.expenseModel.findOneAndDelete({ _id: id, user: userId }).exec();
   }
 
-  async getDailyExpenses(userId: string, startDate: Date, endDate: Date): Promise<any[]> {
-    console.log('daily expense data:',
-      this.expenseModel.aggregate([
+  async getDailyExpenses(userId: string, startDate: Date, endDate: Date): Promise<DailyExpenseResult[]> {
+    console.log(`Getting daily expenses for user ${userId} from ${startDate} to ${endDate}`);
+    
+    try {
+      const result = await this.expenseModel.aggregate([
         {
-          $match:{
-            user:userId,
+          $match: {
+            user: new Types.ObjectId(userId),
             date: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
+            amount: { $sum: '$amount' },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            date: '$_id',
+            amount: 1,
+            count: 1,
           }
-        }
-      ])
-    )
-    return this.expenseModel.aggregate([
-      {
-        $match: {
-          user: new Types.ObjectId(userId),
-          date: { $gte: startDate, $lte: endDate },
         },
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
-          totalAmount: { $sum: '$amount' },
-          count: { $sum: 1 },
+        {
+          $sort: { date: 1 },
         },
-      },
-      {
-        $sort: { _id: 1 },
-      },
-    ]);
+      ]);
+      
+     
+      const allDates: string[] = [];
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        allDates.push(format(currentDate, 'yyyy-MM-dd'));
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      const resultMap = new Map(result.map(item => [item.date, item.amount]));
+      const finalResult = allDates.map(date => ({
+        date,
+        amount: resultMap.get(date) || 0
+      }));
+      
+     
+      return finalResult;
+    } catch (error) {
+      console.error('Error in getDailyExpenses:', error);
+      throw new Error('Failed to fetch daily expenses');
+    }
   }
 
   async getCategoryTotals(userId: string, startDate: Date, endDate: Date): Promise<any[]> {
-    return this.expenseModel.aggregate([
-      {
-        $match: {
-          user: new Types.ObjectId(userId),
-          date: { $gte: startDate, $lte: endDate },
+    console.log(`Getting category totals for user ${userId} from ${startDate} to ${endDate}`);
+    
+    try {
+      const result = await this.expenseModel.aggregate([
+        {
+          $match: {
+            user: new Types.ObjectId(userId),
+            date: { $gte: startDate, $lte: endDate },
+          },
         },
-      },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryData',
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'category',
+            foreignField: '_id',
+            as: 'categoryData',
+          },
         },
-      },
-      {
-        $unwind: {
-          path: '$categoryData',
-          preserveNullAndEmptyArrays: true,
+        {
+          $unwind: {
+            path: '$categoryData',
+            preserveNullAndEmptyArrays: true,
+          },
         },
-      },
-      {
-        $group: {
-          _id: { $ifNull: ['$categoryData.name', 'Uncategorized'] },
-          amount: { $sum: '$amount' },
+        {
+          $group: {
+            _id: { $ifNull: ['$categoryData.name', 'Uncategorized'] },
+            amount: { $sum: '$amount' },
+            color: { $first: { $ifNull: ['$categoryData.color', '#6b7280'] } },
+          },
         },
-      },
-      {
-        $project: {
-          _id: 0,
-          category: '$_id',
-          amount: 1,
+        {
+          $project: {
+            _id: 0,
+            category: '$_id',
+            amount: 1,
+            color: 1,
+          },
         },
-      },
-      {
-        $sort: { amount: -1 },
-      },
-    ]);
+        {
+          $sort: { amount: -1 },
+        },
+      ]);
+      
+      // Ensure we have at least one category
+      if (result.length === 0) {
+        result.push({
+          category: 'Uncategorized',
+          amount: 0,
+          color: '#6b7280'
+        });
+      }
+      
+      console.log('Category totals result:', JSON.stringify(result, null, 2));
+      return result;
+    } catch (error) {
+      console.error('Error in getCategoryTotals:', error);
+      throw new Error('Failed to fetch category totals');
+    }
+  }
+
+  async findByDateRange(userId: string, startDate: Date, endDate: Date): Promise<Expense[]> {
+    const query = {
+      user: userId,
+      date: { 
+        $gte: new Date(startDate), 
+        $lte: new Date(endDate) 
+      }
+    };
+    
+    return this.expenseModel
+      .find(query)
+      .sort({ date: -1 })
+      .populate('category')
+      .exec();
   }
 }

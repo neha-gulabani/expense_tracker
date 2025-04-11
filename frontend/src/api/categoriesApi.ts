@@ -8,14 +8,14 @@ export const categoriesApi = baseApi.injectEndpoints({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ _id }) => ({ type: 'Categories' as const, id: _id })),
-              { type: 'Categories', id: 'LIST' },
+              ...result.map(({ _id }) => ({ type: 'Category' as const, id: _id })),
+              { type: 'Category', id: 'LIST' },
             ]
-          : [{ type: 'Categories', id: 'LIST' }],
+          : [{ type: 'Category', id: 'LIST' }],
     }),
     getCategoryById: builder.query<Category, string>({
       query: (id) => `/categories/${id}`,
-      providesTags: (result, error, id) => [{ type: 'Categories', id }],
+      providesTags: (result, error, id) => [{ type: 'Category', id }],
     }),
     createCategory: builder.mutation<Category, Partial<Category>>({
       query: (category) => ({
@@ -23,7 +23,7 @@ export const categoriesApi = baseApi.injectEndpoints({
         method: 'POST',
         body: category,
       }),
-      invalidatesTags: [{ type: 'Categories', id: 'LIST' }],
+      invalidatesTags: [{ type: 'Category', id: 'LIST' }],
     }),
     updateCategory: builder.mutation<Category, { id: string; category: Partial<Category> }>({
       query: ({ id, category }) => ({
@@ -31,14 +31,14 @@ export const categoriesApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: category,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Categories', id }],
+      invalidatesTags: (result, error, { id }) => [{ type: 'Category', id }],
     }),
     deleteCategory: builder.mutation<void, string>({
       query: (id) => ({
         url: `/categories/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'Categories', id: 'LIST' }],
+      invalidatesTags: [{ type: 'Category', id: 'LIST' }],
     }),
   }),
 });

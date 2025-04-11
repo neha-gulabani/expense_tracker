@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ReportsService } from './reports.service';
-import { ReportsConsumer } from './reports.consumer';
 import { ReportsController } from './reports.controller';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { ExpensesModule } from '../expenses/expenses.module';
@@ -13,7 +12,7 @@ import { ConfigModule } from '@nestjs/config';
     ExpensesModule,
     ConfigModule,
   ],
-  providers: [ReportsService, ReportsConsumer],
+  providers: [ReportsService],
   controllers: [ReportsController],
 })
 export class ReportsModule {}

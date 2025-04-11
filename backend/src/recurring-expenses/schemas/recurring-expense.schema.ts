@@ -22,7 +22,7 @@ export class RecurringExpense {
   description: string;
 
   @Prop({ required: true, enum: RecurringInterval, default: RecurringInterval.MONTHLY })
-  interval: RecurringInterval;
+  frequency: RecurringInterval;
 
   @Prop({ required: true })
   startDate: Date;
@@ -33,8 +33,8 @@ export class RecurringExpense {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Category' })
   category: Category;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
-  user: User;
+  @Prop({ type: String, required: true })
+  user: string;
 
   @Prop({ default: false })
   isActive: boolean;

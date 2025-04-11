@@ -30,12 +30,29 @@ import {
     @Get()
     async findAll(
       @Request() req,
-      @Query() paginationQuery: PaginationQueryDto,
-      @Query() filterDto: FilterExpenseDto,
+      @Query('page') page?: string,
+      @Query('limit') limit?: string,
+      @Query('startDate') startDate?: string,
+      @Query('endDate') endDate?: string,
+      @Query('category') category?: string,
+      @Query('minAmount') minAmount?: string,
+      @Query('maxAmount') maxAmount?: string,
     ) {
       console.log('GET /expenses - User:', req.user.id);
-      console.log('GET /expenses - Pagination:', paginationQuery);
-      console.log('GET /expenses - Filters:', filterDto);
+      console.log('GET /expenses - Query params:', { page, limit, startDate, endDate, category, minAmount, maxAmount });
+      
+      // Create pagination query object
+      const paginationQuery: PaginationQueryDto = {};
+      if (page) paginationQuery.page = parseInt(page, 10);
+      if (limit) paginationQuery.limit = parseInt(limit, 10);
+      
+      // Create filter query object
+      const filterDto: FilterExpenseDto = {};
+      if (startDate) filterDto.startDate = startDate;
+      if (endDate) filterDto.endDate = endDate;
+      if (category) filterDto.category = category;
+      if (minAmount) filterDto.minAmount = parseFloat(minAmount);
+      if (maxAmount) filterDto.maxAmount = parseFloat(maxAmount);
       
       try {
         const result = await this.expensesService.findAll(req.user.id, paginationQuery, filterDto);
@@ -57,6 +74,7 @@ import {
         return result;
       } catch (error) {
         console.error('GET /expenses - Error:', error.message);
+        console.error('GET /expenses - Error stack:', error.stack);
         throw error;
       }
     }
@@ -66,14 +84,14 @@ import {
       console.log('GET /expenses/recent - User:', req.user.id);
       
       try {
-        // Use the existing findAll method but with hardcoded pagination
+        
         const paginationQuery = { limit: 5, page: 1 };
-        const filterDto = {}; // No filters for recent expenses
+        const filterDto = {};
         
         const result = await this.expensesService.findAll(req.user.id, paginationQuery, filterDto);
         console.log('GET /expenses/recent - Found', result.total, 'expenses');
         
-        // Add detailed logging about the response structure
+       
         console.log('GET /expenses/recent - Response structure:', {
           hasData: !!result.data,
           dataIsArray: Array.isArray(result.data),
@@ -87,7 +105,7 @@ import {
           } : 'No items'
         });
         
-        // Return just the data array for simplicity
+       
         return result.data;
       } catch (error) {
         console.error('GET /expenses/recent - Error:', error.message);
@@ -100,7 +118,7 @@ import {
       @Request() req,
       @Query('startDate') startDate: string,
       @Query('endDate') endDate: string,
-    ) {
+    ): Promise<{ date: string; amount: number }[]> {
       console.log(
         `Getting daily expenses for user: ${
           req.user.id

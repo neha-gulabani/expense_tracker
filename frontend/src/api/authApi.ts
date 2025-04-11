@@ -1,5 +1,5 @@
 import { baseApi } from './baseApi';
-import { AuthState, LoginCredentials, RegisterCredentials, User } from '../types';
+import { LoginCredentials, RegisterCredentials, User } from '../types';
 
 interface AuthResponse {
   user: User;

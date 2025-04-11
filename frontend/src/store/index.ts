@@ -12,7 +12,7 @@ export const store = configureStore({
     getDefaultMiddleware().concat(baseApi.middleware),
 });
 
-// Optional, but required for refetchOnFocus/refetchOnReconnect behaviors
+
 setupListeners(store.dispatch);
 
 export type RootState = ReturnType<typeof store.getState>;

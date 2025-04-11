@@ -1,6 +1,33 @@
+// Auth types
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterCredentials extends LoginCredentials {
+  name: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+
+// DTO types
+export interface CreateCategoryDto {
+  name: string;
+  color: string;
+}
+
+export interface UpdateCategoryDto {
+  name?: string;
+  color?: string;
+}
+
 // User types
 export interface User {
-  _id?: string;
+  id: string;
   name: string;
   email: string;
 }
@@ -13,58 +40,52 @@ export interface AuthState {
   error: string | null;
 }
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterCredentials extends LoginCredentials {
-  name: string;
-}
-
 // Category types
 export interface Category {
-  _id?: string;
+  id: string;
   name: string;
-  color?: string;
-  user?: string;
+  color: string;
+  userId: string;
 }
 
 // Expense types
 export interface Expense {
-  _id?: string;
+  id: string;
   amount: number;
   description: string;
   date: string;
+  categoryId: string;
+  userId: string;
   category?: Category;
-  user?: string;
 }
 
 export interface CreateExpenseDto {
   amount: number;
   description: string;
-  date?: string;
-  categoryName?: string;
+  date: string;
+  categoryId: string;
 }
 
 export interface UpdateExpenseDto {
   amount?: number;
   description?: string;
   date?: string;
-  categoryName?: string;
+  categoryId?: string;
 }
 
 export interface FilterExpenseDto {
-  startDate?: string;
-  endDate?: string;
+  page?: number;
+  limit?: number;
   category?: string;
   minAmount?: number;
   maxAmount?: number;
+  isActive?: boolean;
 }
 
 export interface PaginationQueryDto {
   page?: number;
   limit?: number;
+  isActive?: boolean;
 }
 
 export interface PaginatedResponse<T> {
@@ -79,55 +100,60 @@ export enum RecurringInterval {
   DAILY = 'daily',
   WEEKLY = 'weekly',
   MONTHLY = 'monthly',
+  YEARLY = 'yearly'
 }
 
 export interface RecurringExpense {
-  _id?: string;
+  id: string;
   amount: number;
   description: string;
-  interval: RecurringInterval;
+  frequency: string;
   startDate: string;
   endDate?: string;
-  category?: Category;
-  user?: string;
+  categoryId: string;
+  userId: string;
   isActive: boolean;
-  lastProcessed: string;
+  category?: Category;
 }
 
 export interface CreateRecurringExpenseDto {
   amount: number;
   description: string;
-  interval: RecurringInterval;
+  frequency: string;
   startDate: string;
   endDate?: string;
-  categoryName?: string;
+  categoryId: string;
 }
 
 export interface UpdateRecurringExpenseDto {
   amount?: number;
   description?: string;
-  interval?: RecurringInterval;
+  frequency?: string;
   startDate?: string;
   endDate?: string;
-  categoryName?: string;
+  categoryId?: string;
   isActive?: boolean;
 }
 
 // Chart data types
 export interface DailyExpenseData {
-  _id: string; // Date in YYYY-MM-DD format
-  totalAmount: number;
-  count: number;
+  date: string;
+  amount: number;
 }
 
 export interface CategoryTotal {
   category: string;
-  amount: number;
+  total: number;
+  color?: string;
 }
 
 // Report types
 export interface GenerateReportParams {
-  startDate?: string;
-  endDate?: string;
+  startDate: string;
+  endDate: string;
   format?: string;
 }
+
+
+
+export interface RecurringExpenseQueryDto extends PaginationQueryDto, FilterExpenseDto {}

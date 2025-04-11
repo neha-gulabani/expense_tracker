@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { Card, CardContent } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/Card/Card';
 
 const AuthLayout: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -16,7 +16,7 @@ const AuthLayout: React.FC = () => {
       <div className="w-full max-w-md p-4">
         <Card className="w-full">
           <CardContent className="pt-6">
-            <h1 className="text-2xl font-bold text-center mb-6">Expense Tracker</h1>
+            <h1 className="text-2xl font-bold text-center">Expense Tracker</h1>
             <Outlet />
           </CardContent>
         </Card>

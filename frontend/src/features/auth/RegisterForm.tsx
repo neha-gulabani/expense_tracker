@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { Label } from '../../components/ui/label';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/Card/Card';
 
 const validationSchema = Yup.object({
   name: Yup.string().required('Name is required'),
@@ -40,12 +40,12 @@ const RegisterForm: React.FC = () => {
   });
 
   return (
-    <Card className="w-full">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">Create Account</CardTitle>
-      </CardHeader>
+ <>
       
-      <CardContent className="space-y-4">
+        <h3 className="text-lg text-center">Create Account</h3>
+    
+      
+      <CardContent className="space-y-4 w-full">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -121,7 +121,7 @@ const RegisterForm: React.FC = () => {
           </Button>
         </form>
       </CardContent>
-    </Card>
+   </>
   );
 };
 
