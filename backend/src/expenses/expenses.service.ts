@@ -26,23 +26,32 @@ export class ExpensesService {
       console.log('Creating expense with data:', { userId, createExpenseDto });
       const { categoryName, ...expenseData } = createExpenseDto;
       
-   
       let categoryId: string | undefined = undefined;
       if (categoryName) {
         try {
-          const category = await this.categoriesService.findOrCreate(
-            userId,
-            categoryName,
-          );
-          categoryId = category._id;
-          console.log('Found/created category:', { categoryId, categoryName });
+          // Trim the category name to prevent whitespace issues
+          const trimmedCategoryName = categoryName.trim();
+          if (trimmedCategoryName) {
+            // First check if category exists
+            let category = await this.categoriesService.findOne(userId, trimmedCategoryName);
+            
+            if (!category) {
+              // If it doesn't exist, create it
+              category = await this.categoriesService.create(userId, {
+                name: trimmedCategoryName,
+                color: '#' + Math.floor(Math.random()*16777215).toString(16)
+              });
+            }
+            
+            categoryId = category._id;
+            console.log('Category for expense:', { categoryId, categoryName: category.name });
+          }
         } catch (error) {
-          console.error('Error finding/creating category:', error);
+          console.error('Error processing category:', error);
           throw new Error('Failed to process category');
         }
       }
 
-     
       const expense = new this.expenseModel({
         ...expenseData,
         category: categoryId,
@@ -52,9 +61,7 @@ export class ExpensesService {
       
       console.log('Saving expense:', expense);
       const savedExpense = await expense.save();
-      console.log('Saved expense:', savedExpense);
       
-    
       const populatedExpense = await this.expenseModel
         .findById(savedExpense._id)
         .populate('category')
@@ -63,6 +70,11 @@ export class ExpensesService {
       if (!populatedExpense) {
         throw new Error('Failed to retrieve created expense');
       }
+      
+      console.log('Created expense with category:', {
+        expenseId: populatedExpense._id,
+        category: populatedExpense.category
+      });
       
       return populatedExpense;
     } catch (error) {
@@ -169,21 +181,39 @@ export class ExpensesService {
   }
 
   async update(userId: string, id: string, updateExpenseDto: UpdateExpenseDto): Promise<Expense | null> {
-    const { categoryName, ...updateData } = updateExpenseDto;
-    
- 
-    if (categoryName) {
-      const category = await this.categoriesService.findOrCreate(
-        userId,
-        categoryName,
-      );
-      updateData['category'] = category._id;
-    }
+    try {
+      const { categoryName, ...updateData } = updateExpenseDto;
+      
+      if (categoryName) {
+        const trimmedCategoryName = categoryName.trim();
+        if (trimmedCategoryName) {
+          const category = await this.categoriesService.findOrCreate(
+            userId,
+            trimmedCategoryName
+          );
+          updateData['category'] = category._id;
+          console.log('Updated category:', { categoryId: category._id, categoryName: category.name });
+        }
+      }
 
-    return this.expenseModel
-      .findOneAndUpdate({ _id: id, user: userId }, updateData, { new: true })
-      .populate('category')
-      .exec();
+      const updatedExpense = await this.expenseModel
+        .findOneAndUpdate(
+          { _id: id, user: userId }, 
+          updateData, 
+          { new: true }
+        )
+        .populate('category')
+        .exec();
+
+      if (!updatedExpense) {
+        throw new Error('Expense not found or update failed');
+      }
+
+      return updatedExpense;
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      throw new Error('Failed to update expense: ' + error.message);
+    }
   }
 
   async remove(userId: string, id: string): Promise<Expense | null> {

@@ -63,7 +63,10 @@ export const baseApi = createApi({
     getExpenses: builder.query<PaginatedResponse<Expense>, PaginationQueryDto & FilterExpenseDto>({
       query: (params) => ({
         url: '/expenses',
-        params,
+        params: {
+          ...params,
+          populate: 'category'
+        },
       }),
       providesTags: ['Expense'],
     }),
@@ -82,7 +85,7 @@ export const baseApi = createApi({
     updateExpense: builder.mutation<Expense, { id: string; data: UpdateExpenseDto }>({
       query: ({ id, data }) => ({
         url: `/expenses/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: ['Expense'],
@@ -143,7 +146,7 @@ export const baseApi = createApi({
     updateRecurringExpense: builder.mutation<RecurringExpense, { id: string; data: UpdateRecurringExpenseDto }>({
       query: ({ id, data }) => ({
         url: `/recurring-expenses/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: ['RecurringExpense'],

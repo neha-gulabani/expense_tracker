@@ -46,7 +46,10 @@ export class CategoriesService {
     }).exec();
 
     if (!category) {
-      const newCategory = await this.create(userId, { name: categoryName });
+      const newCategory = await this.create(userId, { 
+        name: categoryName,
+        color: '#' + Math.floor(Math.random()*16777215).toString(16) 
+      });
       return newCategory;
     }
 

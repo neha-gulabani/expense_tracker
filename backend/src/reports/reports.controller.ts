@@ -21,7 +21,7 @@ export class ReportsController {
     this.logger.log(`Report parameters: ${JSON.stringify(generateReportDto)}`);
     
     try {
-      // Extract date information from the startDate and endDate
+     
       const startDate = new Date(generateReportDto.startDate);
       const endDate = new Date(generateReportDto.endDate);
       

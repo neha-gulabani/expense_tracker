@@ -16,7 +16,8 @@ import {
   RecurringInterval,
   Category,
   UpdateRecurringExpenseDto,
-  FilterExpenseDto
+  FilterExpenseDto,
+  CreateRecurringExpenseDto
 } from '../../types';
 import { Button } from '../../components/Button/Button';
 import  FilterRecurring  from './FilterRecurring';
@@ -108,31 +109,42 @@ const RecurringExpensesPage: React.FC = () => {
     validationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const recurringExpenseData = {
-          amount: Number(values.amount),
-          description: values.description,
-          frequency: values.frequency,
-          startDate: values.startDate,
-          endDate: values.endDate || undefined,
-          categoryId: values.category,
-          isActive: values.isActive,
-        };
-
+        console.log('Submitting values:', values);
         if (selectedExpense) {
+          const updateData: UpdateRecurringExpenseDto = {
+            amount: Number(values.amount),
+            description: values.description,
+            frequency: values.frequency,
+            startDate: values.startDate,
+            endDate: values.endDate || undefined,
+            categoryName: values.category ? getCategoryName(values.category) : undefined,
+            isActive: values.isActive ?? true
+          };
           await updateRecurringExpense({
             id: selectedExpense._id,
-            data: recurringExpenseData,
+            data: updateData,
           }).unwrap();
+          toast.success('Recurring expense updated successfully');
         } else {
-          await createRecurringExpense(recurringExpenseData).unwrap();
+          const createData: CreateRecurringExpenseDto = {
+            amount: Number(values.amount),
+            description: values.description,
+            frequency: values.frequency,
+            startDate: values.startDate,
+            endDate: values.endDate || undefined,
+            categoryId: values.category,
+            isActive: values.isActive ?? true
+          };
+          await createRecurringExpense(createData).unwrap();
+          toast.success('Recurring expense created successfully');
         }
         resetForm();
         setOpenDialog(false);
         setSelectedExpense(null);
         refetch();
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error saving recurring expense:', error);
-        toast.error('Failed to save recurring expense');
+        toast.error(error.data?.message || 'Failed to save recurring expense');
       }
     },
   });
@@ -147,7 +159,7 @@ const RecurringExpensesPage: React.FC = () => {
         endDate: selectedExpense.endDate,
         category: typeof selectedExpense.category === 'string' 
           ? selectedExpense.category 
-          : selectedExpense.category?.name || '',
+          : selectedExpense.category?._id || '',
         isActive: selectedExpense.isActive,
       };
       formik.setValues(formValues);
@@ -190,9 +202,9 @@ const RecurringExpensesPage: React.FC = () => {
         frequency: expense.frequency,
         startDate: expense.startDate,
         endDate: expense.endDate,
-        categoryId: typeof expense.category === 'string' 
+        categoryName: typeof expense.category === 'string' 
           ? expense.category 
-          : expense.category?._id || '',
+          : expense.category?.name || '',
         isActive: !expense.isActive
       };
 
@@ -308,27 +320,11 @@ const RecurringExpensesPage: React.FC = () => {
       accessor: 'actions',
       cell: (expense: RecurringExpense) => (
         <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleOpenDialog(expense)}
-            className="h-8 w-8 p-0"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleDeleteRecurringExpense(expense._id!)}
-            className="h-8 w-8 p-0"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
+          <Button variant="outline" onClick={() => handleOpenDialog(expense)}>Edit</Button>
+          <Button variant="destructive" onClick={() => handleDeleteRecurringExpense(expense._id!)}>Delete</Button>
+          <Button 
+            variant={expense.isActive ? "outline" : "primary"}
             onClick={() => handleToggleActive(expense)}
-           
           >
             {expense.isActive ? 'Deactivate' : 'Activate'}
           </Button>
@@ -345,22 +341,24 @@ const RecurringExpensesPage: React.FC = () => {
     { value: 'create', label: 'Create New Category' }
   ];
 
-  const handleCreateCategory = async () => {
+  const handleCreateCategory = async (name: string, color: string) => {
     try {
+      if (!name.trim()) {
+        toast.error('Category name is required');
+        return;
+      }
+
       const newCategory = await createCategory({
-        name: newCategoryName,
-        color: newCategoryColor
+        name: name.trim(),
+        color: color || '#888888'
       }).unwrap();
       
-      // Reset the form and close the dialog
-      setNewCategoryName('');
-      setNewCategoryColor('#888888');
-      setIsCategoryDialogOpen(false);
-      
-      // Refetch categories to update the list
-      refetchCategories();
+      await refetchCategories();
+      formik.setFieldValue('category', newCategory._id);
+      toast.success('Category created successfully');
     } catch (error) {
       console.error('Error creating category:', error);
+      toast.error('Failed to create category');
     }
   };
 

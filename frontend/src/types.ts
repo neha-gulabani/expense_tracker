@@ -80,7 +80,15 @@ export interface CreateRecurringExpenseDto {
   isActive?: boolean;
 }
 
-export interface UpdateRecurringExpenseDto extends Partial<CreateRecurringExpenseDto> {}
+export interface UpdateRecurringExpenseDto {
+  amount?: number;
+  description?: string;
+  frequency?: string;
+  startDate?: string;
+  endDate?: string;
+  categoryName?: string;
+  isActive?: boolean;
+}
 
 // Pagination and filtering
 export interface PaginationQueryDto {

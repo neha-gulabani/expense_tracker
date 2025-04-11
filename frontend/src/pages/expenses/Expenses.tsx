@@ -14,11 +14,14 @@ import { Table } from '../../components/Table/Table';
 import { Badge } from '../../components/Badge/Badge';
 import { Spinner } from '../../components/Spinner/Spinner';
 import { Pagination } from '../../components/Pagination/Pagination';
+import { toast } from 'react-hot-toast';
 
 import { 
   Expense, 
   SelectOption,
   CreateExpenseDto,
+  Category,
+  UpdateExpenseDto
 } from '../../types';
 import AddExpenses from './AddExpenses';
 import FilterExpenses from './FilterExpenses';
@@ -118,31 +121,28 @@ const ExpensesPage: React.FC = () => {
     },
     onSubmit: async (values, { resetForm }) => {
       try {
-        // Find the category name from the selected category ID
-        const selectedCategory = categories.find(c => c._id === values.category);
-        const categoryName = selectedCategory?.name || values.category;
-
         if (selectedExpense) {
+          const updateData: UpdateExpenseDto = {
+            amount: Number(values.amount),
+            date: values.date,
+            description: values.description,
+            categoryName: values.category
+          };
           await updateExpense({
             id: selectedExpense._id,
-            data: {
-              amount: Number(values.amount),
-              date: values.date,
-              description: values.description,
-              categoryName: categoryName
-            }
+            data: updateData
           }).unwrap();
+          toast.success('Expense updated successfully');
         } else {
           const createExpenseData = {
             amount: Number(values.amount),
             date: values.date,
             description: values.description,
-            categoryName: categoryName
+            categoryName: values.category
           };
           
-          console.log('Creating expense with data:', createExpenseData);
-          
           await createExpense(createExpenseData as CreateExpenseDto).unwrap();
+          toast.success('Expense created successfully');
         }
         resetForm();
         setIsDialogOpen(false);
@@ -198,7 +198,7 @@ const ExpensesPage: React.FC = () => {
       description: expense.description,
       category: categoryName
     });
-  }, [formik.setValues, categories]);
+  }, [categories, formik.setValues]);
 
   useEffect(() => {
     if (selectedExpense) {
@@ -206,11 +206,12 @@ const ExpensesPage: React.FC = () => {
     } else {
       formik.resetForm();
     }
-  }, [selectedExpense, updateFormValues, formik.resetForm]);
+  }, [selectedExpense, updateFormValues]);
 
   const handleEdit = (expense: Expense) => {
     setSelectedExpense(expense);
     setIsDialogOpen(true);
+    updateFormValues(expense);
   };
 
   const handleDelete = async (id: string) => {
@@ -254,68 +255,43 @@ const ExpensesPage: React.FC = () => {
   };
 
   const columns = [
-    {
-      header: 'Date',
-      accessor: 'date',
-      cell: (expense: Expense) => format(new Date(expense.date), 'MMM dd, yyyy')
-    },
-    {
-      header: 'Description',
-      accessor: 'description'
-    },
-    {
-      header: 'Category',
+    { header: 'Date', accessor: 'date', cell: (item: Expense) => format(new Date(item.date), 'MMM dd, yyyy') },
+    { header: 'Description', accessor: 'description' },
+    { header: 'Amount', accessor: 'amount', cell: (item: Expense) => `$${item.amount.toFixed(2)}` },
+    { 
+      header: 'Category', 
       accessor: 'category',
-      cell: (expense: Expense) => {
-        if (!expense || !expense.category) {
-          return <Badge text="Unknown" color="#888888" />;
+      cell: (item: Expense) => {
+        let categoryData;
+        
+        if (typeof item.category === 'string') {
+          // If category is just an ID, find the category object from our categories list
+          categoryData = categories.find(c => c._id === item.category);
+          console.log('Category from ID:', item.category, 'Found:', categoryData);
+        } else {
+          // If category is already populated, use it directly
+          categoryData = item.category as Category;
+          console.log('Populated category:', categoryData);
         }
-
-        // Handle both string and object formats
-        let categoryName = '';
-        let categoryColor = '#888888';
-
-        if (typeof expense.category === 'string') {
-          // If it's a string, try to find the category in our list
-          const foundCategory = categories.find(c => c._id === expense.category);
-          categoryName = foundCategory?.name || 'Unknown';
-          categoryColor = foundCategory?.color || '#888888';
-        } else if (expense.category && typeof expense.category === 'object') {
-          // If it's an object (populated category), use its properties directly
-          categoryName = expense.category.name || 'Unknown';
-          categoryColor = expense.category.color || '#888888';
+        
+        if (!categoryData) {
+          return <Badge color="#888888">Uncategorized</Badge>;
         }
 
         return (
-          <Badge 
-            text={categoryName} 
-            color={categoryColor} 
-          />
+          <Badge color={categoryData.color || '#888888'}>
+            {categoryData.name}
+          </Badge>
         );
       }
     },
     {
-      header: 'Amount',
-      accessor: 'amount',
-      cell: (expense: Expense) => `$${expense.amount.toFixed(2)}`
-    },
-    {
       header: 'Actions',
       accessor: 'actions',
-      cell: (expense: Expense) => (
+      cell: (item: Expense) => (
         <div className="flex space-x-2">
-          <button
-            onClick={() => handleEdit(expense)}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleDelete(expense._id)}
-            className="text-red-600 hover:text-red-800"
-          >
-            Delete
-          </button>
+          <Button variant="outline" onClick={() => handleEdit(item)}>Edit</Button>
+          <Button variant="destructive" onClick={() => handleDelete(item._id)}>Delete</Button>
         </div>
       )
     }
@@ -325,7 +301,7 @@ const ExpensesPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Expenses</h1>
-        <Button><Plus className="h-4 w-4" /> Add Expense</Button>
+        <Button onClick={() => setIsDialogOpen(true)}><Plus className="h-4 w-4" /> Add Expense</Button>
       </div>
 
       {/* Filters */}

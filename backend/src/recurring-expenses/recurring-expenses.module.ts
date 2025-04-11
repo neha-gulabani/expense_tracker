@@ -1,4 +1,4 @@
-/recurring-expenses/recurring-expenses.module.ts
+
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RecurringExpensesController } from './recurring-expenses.controller';

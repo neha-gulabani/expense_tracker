@@ -42,21 +42,20 @@ export interface AuthState {
 
 // Category types
 export interface Category {
-  id: string;
+  _id: string;
   name: string;
   color: string;
-  userId: string;
+  user: string;
 }
 
 // Expense types
 export interface Expense {
-  id: string;
+  _id: string;
   amount: number;
   description: string;
   date: string;
-  categoryId: string;
-  userId: string;
-  category?: Category;
+  category: Category | string;
+  user: string;
 }
 
 export interface CreateExpenseDto {
@@ -70,7 +69,7 @@ export interface UpdateExpenseDto {
   amount?: number;
   description?: string;
   date?: string;
-  categoryId?: string;
+  categoryName?: string;
 }
 
 export interface FilterExpenseDto {
@@ -131,7 +130,7 @@ export interface UpdateRecurringExpenseDto {
   frequency?: string;
   startDate?: string;
   endDate?: string;
-  categoryId?: string;
+  categoryName?: string;
   isActive?: boolean;
 }
 

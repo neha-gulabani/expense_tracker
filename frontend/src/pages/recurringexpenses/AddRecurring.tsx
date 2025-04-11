@@ -25,7 +25,7 @@ interface AddRecurringProps {
     isActive?: boolean;
   }>;
   categoryOptions: Array<{ value: string; label: string }>;
-  handleCreateCategory: () => void;
+  handleCreateCategory: (name: string, color: string) => Promise<void>;
 }
 
 const AddRecurring: React.FC<AddRecurringProps> = ({
@@ -39,6 +39,17 @@ const AddRecurring: React.FC<AddRecurringProps> = ({
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#888888');
+
+  const handleCreateCategoryClick = async () => {
+    try {
+      await handleCreateCategory(newCategoryName, newCategoryColor);
+      setIsCategoryDialogOpen(false);
+      setNewCategoryName('');
+      setNewCategoryColor('#888888');
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
+  };
 
   return (
     <>
@@ -143,13 +154,13 @@ const AddRecurring: React.FC<AddRecurringProps> = ({
                   placeholder="Select Category"
                   className="w-full"
                 />
-                <button
+                <Button
                   type="button"
                   onClick={() => setIsCategoryDialogOpen(true)}
-                  className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  variant='outline'
                 >
                   New
-                </button>
+                </Button>
               </div>
               {formik.touched.category && formik.errors.category && (
                 <div className="text-red-500 text-sm mt-1">{formik.errors.category}</div>
@@ -233,7 +244,7 @@ const AddRecurring: React.FC<AddRecurringProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleCreateCategory}
+                onClick={handleCreateCategoryClick}
                 disabled={!newCategoryName.trim()}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
