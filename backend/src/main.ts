@@ -9,23 +9,23 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   
-  // // Connect to RabbitMQ for microservice communication
-  // const rabbitmqUrl = process.env.RABBITMQ_URL;
-  // console.log(`Connecting to RabbitMQ at: ${rabbitmqUrl}`);
+  // Connect to RabbitMQ for microservice communication
+  const rabbitmqUrl = process.env.RABBITMQ_URL;
+  console.log(`Connecting to RabbitMQ at: ${rabbitmqUrl}`);
   
-  // app.connectMicroservice({
-  //   transport: Transport.RMQ,
-  //   options: {
-  //     urls: [rabbitmqUrl],
-  //     queue: REPORTS_QUEUE,
-  //     queueOptions: {
-  //       durable: true,
-  //     },
-  //   },
-  // });
+  app.connectMicroservice({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rabbitmqUrl],
+      queue: REPORTS_QUEUE,
+      queueOptions: {
+        durable: true,
+      },
+    },
+  });
   
-  // await app.startAllMicroservices();
-  // console.log('Microservice is listening');
+  await app.startAllMicroservices();
+  console.log('Microservice is listening');
   
   // Configure CORS
   app.enableCors({
