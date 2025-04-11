@@ -21,4 +21,5 @@ COPY --from=builder /app/backend/node_modules ./node_modules
 EXPOSE 3000
 
 # Start command (assumes dist/main.js exists)
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
+
