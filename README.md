@@ -35,7 +35,7 @@ root/ │
 - CRUD operations for expenses
 - Category management
 - MongoDB for data storage
-- RabbitMQ integration for background jobs/notifications (if applicable)
+- RabbitMQ integration for background jobs/notifications 
 - DTO validation with `class-validator`
 - `.env`-based config management
 
