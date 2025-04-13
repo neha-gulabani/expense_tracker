@@ -4,8 +4,9 @@ A full-stack Expense Tracker application to manage and visualize your spending h
 
 ---
 
-## 📁 Project Structure
 
+## 📁 Project Structure
+```
 root/ │ 
 ├── backend/ # NestJS backend │ 
      ├── src/ │ 
@@ -14,6 +15,8 @@ root/ │
       ├── src/ │ 
           └── ... │ 
 └── README.md
+
+```
 
 
 
@@ -68,10 +71,12 @@ npm run start:dev
 ```
 
 ## Environment variables in backend
+```
 PORT=3000
 MONGODB_URI=mongodb+srv://your-mongo-uri
 RABBITMQ_URL=amqp://localhost
 FRONTEND_URL=http://localhost:5173
+```
 
 
 ## Frontend Set up
