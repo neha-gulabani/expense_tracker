@@ -58,7 +58,7 @@ root/ │
 - Node.js (v18+)
 - MongoDB (cloud or local)
 - RabbitMQ (if using queues)
-- Docker (optional)
+
 
 ---
 
