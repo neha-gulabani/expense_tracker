@@ -9,7 +9,7 @@ export interface RegisterCredentials extends LoginCredentials {
 }
 
 export interface AuthResponse {
-  token: string;
+  access_token: string;
   user: User;
 }
 
@@ -27,7 +27,7 @@ export interface UpdateCategoryDto {
 
 // User types
 export interface User {
-  id: string;
+  _id: string;
   name: string;
   email: string;
 }

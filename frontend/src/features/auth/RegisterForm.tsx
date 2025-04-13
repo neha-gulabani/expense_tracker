@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/input';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import { Label } from '../../components/ui/label';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/Card/Card';
+import { CardContent } from '../../components/Card/Card';
 
 const validationSchema = Yup.object({
   name: Yup.string().required('Name is required'),
@@ -34,7 +34,7 @@ const RegisterForm: React.FC = () => {
         await register(values).unwrap();
         navigate('/dashboard');
       } catch (err) {
-        // Error is handled by the RTK Query hook
+        
       }
     },
   });
