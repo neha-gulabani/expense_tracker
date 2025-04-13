@@ -23,7 +23,7 @@ import {
 
 // Create our baseQuery instance
 const baseQuery = fetchBaseQuery({
-  baseUrl: '/api',
+  baseUrl: 'http://localhost:3000',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as any).auth.token;
     if (token) {
@@ -111,14 +111,7 @@ export const baseApi = createApi({
       }),
       invalidatesTags: ['Category'],
     }),
-    updateCategory: builder.mutation<Category, { id: string; data: UpdateCategoryDto }>({
-      query: ({ id, data }) => ({
-        url: `/categories/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: ['Category'],
-    }),
+  
     deleteCategory: builder.mutation<void, string>({
       query: (id) => ({
         url: `/categories/${id}`,
@@ -194,7 +187,6 @@ export const {
   useDeleteExpenseMutation,
   useGetCategoriesQuery,
   useCreateCategoryMutation,
-  useUpdateCategoryMutation,
   useDeleteCategoryMutation,
   useGetRecurringExpensesQuery,
   useCreateRecurringExpenseMutation,

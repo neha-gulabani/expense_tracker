@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 import { REPORTS_QUEUE } from '../constants';
+import { Header } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

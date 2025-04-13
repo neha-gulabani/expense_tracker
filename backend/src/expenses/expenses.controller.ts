@@ -41,12 +41,12 @@ import {
       console.log('GET /expenses - User:', req.user.id);
       console.log('GET /expenses - Query params:', { page, limit, startDate, endDate, category, minAmount, maxAmount });
       
-      // Create pagination query object
+     
       const paginationQuery: PaginationQueryDto = {};
       if (page) paginationQuery.page = parseInt(page, 10);
       if (limit) paginationQuery.limit = parseInt(limit, 10);
       
-      // Create filter query object
+      
       const filterDto: FilterExpenseDto = {};
       if (startDate) filterDto.startDate = startDate;
       if (endDate) filterDto.endDate = endDate;

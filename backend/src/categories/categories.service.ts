@@ -28,11 +28,18 @@ export class CategoriesService {
   }
 
   async update(userId: string, id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category | null> {
-    return this.categoryModel.findOneAndUpdate(
+    console.log('Updating category:', {
+      userId,
+      id,
+      updateCategoryDto
+    });
+    const result = await this.categoryModel.findOneAndUpdate(
       { _id: id, user: userId },
       updateCategoryDto,
       { new: true },
     ).exec();
+    console.log('Update result:', result);
+    return result;
   }
 
   async remove(userId: string, id: string): Promise<Category | null> {

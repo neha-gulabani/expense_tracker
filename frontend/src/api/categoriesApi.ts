@@ -30,8 +30,14 @@ export const categoriesApi = baseApi.injectEndpoints({
         url: `/categories/${id}`,
         method: 'PATCH',
         body: category,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Category', id }],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Category', id },
+        { type: 'Category', id: 'LIST' }
+      ],
     }),
     deleteCategory: builder.mutation<void, string>({
       query: (id) => ({
