@@ -5,6 +5,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true, 
+    port: 5173,
+    strictPort: true,
+    hmr: {
+      clientPort: 5173,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
@@ -13,10 +19,9 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
-           
+         
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-          
             // Forward the authorization header
             const authHeader = req.headers.authorization;
             if (authHeader) {
@@ -24,7 +29,7 @@ export default defineConfig({
             }
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-           
+            
           });
         },
       }
